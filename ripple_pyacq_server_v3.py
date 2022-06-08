@@ -1,0 +1,113 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2016, French National Center for Scientific Research (CNRS)
+# Distributed under the (new) BSD License. See LICENSE for more info.
+"""
+Noise generator node
+
+Simple example of a custom Node class that generates a stream of random
+values. 
+
+"""
+# import numpy as np
+from http import server
+import subprocess, os, sys
+import pdb
+from pyacq.core import create_manager, rpc
+from pyqtgraph.Qt import QtCore, QtGui
+import pyqtgraph as pg
+import pyacq
+from pyacq.devices import XipppyBuffer
+from pyacq.devices.ripple import ripple_signal_types
+from pyacq.viewers import QTimeFreq, QOscilloscope, QTriggeredOscilloscope
+import xipppy as xp
+
+if __name__ == '__main__':
+    showScope = False
+    showTFR = False
+    showTriggeredScope = True
+
+    # just in case
+    xp._close()
+
+    # Start Qt application
+    app = QtGui.QApplication([])
+
+    dev = XipppyBuffer()
+    requestedChannels = {
+        # 'hi-res': [2,3,8]
+        }
+    dev.configure(
+        sample_interval_sec=100e-3, sample_chunksize_sec=100e-3,
+        channels=requestedChannels, verbose=False, debugging=False)
+    for signalType in ripple_signal_types:
+        dev.outputs[signalType].configure(
+            protocol='tcp', transfermode='sharedmem', double=True
+            # protocol='tcp', interface='127.0.0.1', transfermode='plaindata'
+            )
+    dev.initialize()
+
+    if showScope:
+        # Create an oscilloscope node to view the Ripple stream
+        osc = QOscilloscope()
+        osc.configure(with_user_dialog=True, max_xsize=20.)
+        osc.input.connect(dev.outputs['hifreq'])
+        osc.initialize()
+        osc.show()
+        #
+        osc.params['decimation_method'] = 'min_max'
+        osc.params['mode'] = 'scroll'
+        osc.params['refresh_interval'] = 100
+        osc.params['display_labels'] = True
+        osc.params['show_bottom_axis'] = True
+        osc.params['show_left_axis'] = True
+    else:
+        osc = None
+
+    if showTFR:
+        # Create a manager to spawn worker process to record and process audio
+        man = create_manager()
+        # spawn workers do calculate the spectrogram
+        tfr_workers = [man.create_nodegroup() for i in range(8)]
+        # Create a time frequency viewer
+        tfr = QTimeFreq()
+        tfr.configure(with_user_dialog=True, nodegroup_friends=tfr_workers)
+        tfr.input.connect(dev.outputs['hifreq'])
+        tfr.initialize()
+        tfr.show()
+        #
+        tfr.params['xsize'] = 1.
+        tfr.params['nb_column'] = 8
+        tfr.params['refresh_interval'] = 100
+        tfr.params['show_axis'] = True
+    else:
+        tfr = None
+
+    if showTriggeredScope:
+        # Create a triggered oscilloscope to display data.
+        trig = QTriggeredOscilloscope()
+        trig.configure(
+            with_user_dialog=True, window_label='triggered_scope')
+
+        # Connect audio stream to oscilloscope
+        trig.input.connect(dev.outputs['hifreq'])
+
+        trig.initialize()
+        trig.show()
+        #trig.params['decimation_method'] = 'min_max'
+        #trig.by_channel_params['Signal0', 'gain'] = 0.001
+
+        trig.trigger.params['threshold'] = 1.
+        trig.trigger.params['debounce_mode'] = 'after-stable'
+        trig.trigger.params['front'] = '+'
+        trig.trigger.params['debounce_time'] = 0.1
+        trig.triggeraccumulator.params['stack_size'] = 3
+        trig.triggeraccumulator.params['left_sweep'] = -.2
+        trig.triggeraccumulator.params['right_sweep'] = .5
+
+    # start nodes
+    for node in [osc, tfr, trig, dev]:
+        if node is not None:
+            node.start()
+    #
+    if sys.flags.interactive == 0:
+        app.exec_()

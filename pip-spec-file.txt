@@ -1,26 +1,31 @@
 appdirs==1.4.4
-av @ file:///D:/bld/av_1650457126312/work
+av @ file:///D:/bld/av_1650457124688/work
 certifi==2022.5.18.1
+decorator @ file:///opt/conda/conda-bld/decorator_1643638310831/work
+freetype-py @ file:///Users/ktietz/demo/mc3/conda-bld/freetype-py_1629367757594/work
+hsluv @ file:///Users/ktietz/demo/mc3/conda-bld/hsluv_1629367907988/work
 imageio @ file:///tmp/build/80754af9/imageio_1617700267927/work
+kiwisolver @ file:///C:/ci/kiwisolver_1653292408254/work
 Mako @ file:///tmp/build/80754af9/mako_1610650590832/work
-MarkupSafe @ file:///C:/ci/markupsafe_1621528383308/work
+MarkupSafe @ file:///C:/ci/markupsafe_1621528314575/work
 mkl-fft==1.3.1
-mkl-random @ file:///C:/ci/mkl_random_1626186163140/work
+mkl-random @ file:///C:/ci/mkl_random_1626186184278/work
 mkl-service==2.4.0
-msgpack @ file:///C:/ci/msgpack-python_1652347515899/work
-numpy @ file:///C:/ci/numpy_and_numpy_base_1650959324056/work
+msgpack @ file:///C:/ci/msgpack-python_1652329319342/work
+numpy @ file:///C:/ci/numpy_and_numpy_base_1652802206636/work
 Pillow==9.0.1
 platformdirs @ file:///tmp/build/80754af9/platformdirs_1638968569495/work
--e git+https://github.com/rdarie/pyacq.git@639c9e36001beca6e0c65f273f0b763c77734026#egg=pyacq
+-e git+https://github.com/rdarie/pyacq.git@948ac0dc6169cd408252470145d110a6bc69f73d#egg=pyacq
 PyAudio==0.2.11
 pyopencl==2022.1.5
 pyqtgraph @ file:///tmp/build/80754af9/pyqtgraph_1594064840332/work
 pyserial==3.5
 pytools @ file:///home/conda/feedstock_root/build_artifacts/pytools_1653077922404/work
-pyzmq @ file:///C:/ci/pyzmq_1638435182681/work
-scipy @ file:///C:/ci/scipy_1641555141383/work
+pyzmq @ file:///C:/ci/pyzmq_1638435185959/work
+scipy @ file:///C:/ci/scipy_1641555198988/work
 sip==4.19.13
 six @ file:///tmp/build/80754af9/six_1644875935023/work
 typing_extensions @ file:///opt/conda/conda-bld/typing_extensions_1647553014482/work
-vispy==0.5.3
+vispy @ file:///D:/bld/vispy_1650324005266/work
 wincertstore==0.2
+xipppy @ file:///C:/Users/Radu/Documents/GitHub/rippleViewer/wheels/xipppy-0.16.19-cp38-cp38-win_amd64.whl

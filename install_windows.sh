@@ -24,6 +24,11 @@ for PREREQ in ${WHEEL_PREREQS[*]}; do
     pip install "${PREREQ}" --no-deps --upgrade
 done
 
+for FILE in ./wheels/*.whl; do
+    echo "Installing ${FILE}"
+    pip install "${FILE}" --no-deps --upgrade
+done
+
 GitRepoRoot="git://github.com/rdarie/"
 
 RepoList=(\

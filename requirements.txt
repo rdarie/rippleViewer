@@ -1,11 +1,11 @@
-python==3.7
+python==3.8.5
 pip
 numpy
 pyqtgraph
 pyzmq
 blosc
 msgpack-python
-vispy
+vispy>=0.9
 pyaudio
 pyserial
 # for eeg emotiv functionality
@@ -16,3 +16,4 @@ av
 imageio
 scipy
 pyopencl
+decorator==5.1.1
