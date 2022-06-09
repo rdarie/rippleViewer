@@ -3,14 +3,12 @@
 # activate conda
 source ~/.bashrc
 conda config --append channels conda-forge
+
 # remove if exists
 export PYTHONPATH="${HOME}/.conda/envs/rippleViewer/Lib/site-packages"
 conda remove -n rippleViewer --all --yes
 rm -rf "${HOME}/.conda/envs/rippleViewer/*"
-#
-ENVDIR="${HOME}/rippleViewerEnv"
-rm -rf $ENVDIR
-mkdir $ENVDIR
+
 # create environment
 conda create -n rippleViewer --file requirements.txt --yes
 
@@ -33,41 +31,23 @@ for FILE in ./wheels/*.whl; do
     pip install "${FILE}" --no-deps --upgrade
 done
 
-
-GitRepoRoot="https://github.com/rdarie/"
-
 RepoList=(\
-"pyacq" \
-"ephyviewer" \
+"${HOME}/Documents/GitHub/pyacq" \
+"${HOME}/Documents/GitHub/ephyviewer" \
 )
 
-RepoOptsList=(\
-"" \
-" -b rippleViewer" \
-)
-
-cd $ENVDIR
-# clone and install other repos
+# Install other repos
 for i in ${!RepoList[@]}; do
     echo $i
-    # clone the repo
-    repoOpts=${RepoOptsList[i]}
-    echo "repoOpts =${repoOpts}"
     repoName=${RepoList[i]}
-    echo "repoName =${repoName}"
+    echo "Installing: ${repoName}"
     #
-    echo "Cloning ${GitRepoRoot}${repoName}.git${repoOpts}"
-    eval "git clone ${GitRepoRoot}${repoName}.git${repoOpts}"
-    
-    echo "Installing "$GitRepoRoot$repoName
     # enter this repo
     cd $repoName
-    pwd
     python setup.py develop --install-dir=$PYTHONPATH --no-deps
-    cd $ENVDIR
 done
 
-cd rippleViewer
+cd "${HOME}/Documents/GitHub/rippleViewer"
 
 conda list --explicit > ./conda-spec-file.txt
 pip freeze > ./pip-spec-file.txt

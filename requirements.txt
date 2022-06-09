@@ -17,3 +17,7 @@ imageio
 scipy
 pyopencl
 decorator==5.1.1
+# for ephyviewer
+python-neo>=0.9
+pandas
+matplotlib

@@ -1,30 +1,45 @@
 appdirs==1.4.4
 av @ file:///D:/bld/av_1650457124688/work
+Bottleneck @ file:///C:/ci/bottleneck_1648029103672/work
 certifi==2022.5.18.1
+cycler @ file:///tmp/build/80754af9/cycler_1637851556182/work
 decorator @ file:///opt/conda/conda-bld/decorator_1643638310831/work
+-e git+https://github.com/rdarie/ephyviewer.git@3d3c8d5cb775e98d9955cd271bd917650b89715c#egg=ephyviewer
+fonttools==4.25.0
 freetype-py @ file:///Users/ktietz/demo/mc3/conda-bld/freetype-py_1629367757594/work
 hsluv @ file:///Users/ktietz/demo/mc3/conda-bld/hsluv_1629367907988/work
 imageio @ file:///tmp/build/80754af9/imageio_1617700267927/work
 kiwisolver @ file:///C:/ci/kiwisolver_1653292408254/work
 Mako @ file:///tmp/build/80754af9/mako_1610650590832/work
-MarkupSafe @ file:///C:/ci/markupsafe_1621528314575/work
+MarkupSafe @ file:///C:/ci/markupsafe_1654489871526/work
+matplotlib @ file:///C:/ci/matplotlib-suite_1647423638658/work
 mkl-fft==1.3.1
 mkl-random @ file:///C:/ci/mkl_random_1626186184278/work
 mkl-service==2.4.0
 msgpack @ file:///C:/ci/msgpack-python_1652329319342/work
+munkres==1.1.4
+neo @ file:///home/conda/feedstock_root/build_artifacts/python-neo_1632743000666/work
+numexpr @ file:///C:/ci/numexpr_1640704408721/work
 numpy @ file:///C:/ci/numpy_and_numpy_base_1652802206636/work
+packaging @ file:///tmp/build/80754af9/packaging_1637314298585/work
+pandas @ file:///C:/ci/pandas_1650373491186/work
 Pillow==9.0.1
 platformdirs @ file:///tmp/build/80754af9/platformdirs_1638968569495/work
--e git+https://github.com/rdarie/pyacq.git@948ac0dc6169cd408252470145d110a6bc69f73d#egg=pyacq
+-e git+https://github.com/rdarie/pyacq.git@9e3fa45fb240cd78cff03d407a3bfa8ab922b0b6#egg=pyacq
 PyAudio==0.2.11
 pyopencl==2022.1.5
+pyparsing @ file:///tmp/build/80754af9/pyparsing_1635766073266/work
 pyqtgraph @ file:///tmp/build/80754af9/pyqtgraph_1594064840332/work
 pyserial==3.5
+python-dateutil @ file:///tmp/build/80754af9/python-dateutil_1626374649649/work
 pytools @ file:///home/conda/feedstock_root/build_artifacts/pytools_1653077922404/work
+pytz==2021.3
 pyzmq @ file:///C:/ci/pyzmq_1638435185959/work
+quantities @ file:///home/conda/feedstock_root/build_artifacts/quantities_1642537038651/work
 scipy @ file:///C:/ci/scipy_1641555198988/work
 sip==4.19.13
 six @ file:///tmp/build/80754af9/six_1644875935023/work
+tornado @ file:///C:/ci/tornado_1606942392901/work
 typing_extensions @ file:///opt/conda/conda-bld/typing_extensions_1647553014482/work
 vispy @ file:///D:/bld/vispy_1650324005266/work
 wincertstore==0.2
