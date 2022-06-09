@@ -1,13 +1,33 @@
+aiohttp @ file:///C:/ci/aiohttp_1646806545879/work
+aiosignal @ file:///tmp/build/80754af9/aiosignal_1637843061372/work
 appdirs==1.4.4
+async-timeout @ file:///tmp/build/80754af9/async-timeout_1637851218186/work
+attrs @ file:///opt/conda/conda-bld/attrs_1642510447205/work
 av @ file:///D:/bld/av_1650457124688/work
 Bottleneck @ file:///C:/ci/bottleneck_1648029103672/work
+brotlipy==0.7.0
+cachetools @ file:///tmp/build/80754af9/cachetools_1619597386817/work
 certifi==2022.5.18.1
+cffi @ file:///C:/ci_310/cffi_1642682485096/work
+charset-normalizer @ file:///tmp/build/80754af9/charset-normalizer_1630003229654/work
+colorama @ file:///tmp/build/80754af9/colorama_1607707115595/work
+cryptography @ file:///C:/ci/cryptography_1652101772384/work
 cycler @ file:///tmp/build/80754af9/cycler_1637851556182/work
 decorator @ file:///opt/conda/conda-bld/decorator_1643638310831/work
--e git+https://github.com/rdarie/ephyviewer.git@3d3c8d5cb775e98d9955cd271bd917650b89715c#egg=ephyviewer
+-e git+https://github.com/rdarie/ephyviewer.git@679e1f6327bc2eaa26dcc8d81394ddd1c6f3893b#egg=ephyviewer
 fonttools==4.25.0
 freetype-py @ file:///Users/ktietz/demo/mc3/conda-bld/freetype-py_1629367757594/work
+frozenlist @ file:///C:/ci/frozenlist_1637767289747/work
+fsspec @ file:///C:/ci/fsspec_1652802723452/work
+funcy @ file:///home/conda/feedstock_root/build_artifacts/funcy_1640095670534/work
+google-api-core @ file:///C:/ci/google-api-core-split_1639676600705/work
+google-api-python-client @ file:///home/conda/feedstock_root/build_artifacts/google-api-python-client_1646211064055/work
+google-auth @ file:///opt/conda/conda-bld/google-auth_1646735974934/work
+google-auth-httplib2 @ file:///home/conda/feedstock_root/build_artifacts/google-auth-httplib2_1654134467987/work
+googleapis-common-protos @ file:///C:/ci/googleapis-common-protos-feedstock_1617957828677/work
 hsluv @ file:///Users/ktietz/demo/mc3/conda-bld/hsluv_1629367907988/work
+httplib2 @ file:///home/conda/feedstock_root/build_artifacts/httplib2_1644593570376/work
+idna @ file:///tmp/build/80754af9/idna_1637925883363/work
 imageio @ file:///tmp/build/80754af9/imageio_1617700267927/work
 kiwisolver @ file:///C:/ci/kiwisolver_1653292408254/work
 Mako @ file:///tmp/build/80754af9/mako_1610650590832/work
@@ -17,30 +37,49 @@ mkl-fft==1.3.1
 mkl-random @ file:///C:/ci/mkl_random_1626186184278/work
 mkl-service==2.4.0
 msgpack @ file:///C:/ci/msgpack-python_1652329319342/work
+multidict @ file:///C:/ci/multidict_1607362065515/work
 munkres==1.1.4
 neo @ file:///home/conda/feedstock_root/build_artifacts/python-neo_1632743000666/work
+-e git+https://github.com/rdarie/neurotic.git@2f1cba4c7df4f21e32d7c29f5d80c76662372f3b#egg=neurotic
 numexpr @ file:///C:/ci/numexpr_1640704408721/work
 numpy @ file:///C:/ci/numpy_and_numpy_base_1652802206636/work
+oauth2client==4.1.3
 packaging @ file:///tmp/build/80754af9/packaging_1637314298585/work
 pandas @ file:///C:/ci/pandas_1650373491186/work
 Pillow==9.0.1
 platformdirs @ file:///tmp/build/80754af9/platformdirs_1638968569495/work
--e git+https://github.com/rdarie/pyacq.git@9e3fa45fb240cd78cff03d407a3bfa8ab922b0b6#egg=pyacq
+protobuf==3.20.1
+-e git+https://github.com/rdarie/pyacq.git@115e88d0f5b2c904f1d63ec91b8ae21ab8e55d01#egg=pyacq
+pyasn1 @ file:///Users/ktietz/demo/mc3/conda-bld/pyasn1_1629708007385/work
+pyasn1-modules==0.2.8
 PyAudio==0.2.11
+pycparser @ file:///tmp/build/80754af9/pycparser_1636541352034/work
+PyDrive2 @ file:///home/conda/feedstock_root/build_artifacts/pydrive2_1650347012084/work
 pyopencl==2022.1.5
+pyOpenSSL @ file:///opt/conda/conda-bld/pyopenssl_1643788558760/work
 pyparsing @ file:///tmp/build/80754af9/pyparsing_1635766073266/work
 pyqtgraph @ file:///tmp/build/80754af9/pyqtgraph_1594064840332/work
 pyserial==3.5
+PySocks @ file:///C:/ci/pysocks_1605287845585/work
 python-dateutil @ file:///tmp/build/80754af9/python-dateutil_1626374649649/work
 pytools @ file:///home/conda/feedstock_root/build_artifacts/pytools_1653077922404/work
 pytz==2021.3
+PyYAML==6.0
 pyzmq @ file:///C:/ci/pyzmq_1638435185959/work
 quantities @ file:///home/conda/feedstock_root/build_artifacts/quantities_1642537038651/work
+requests @ file:///opt/conda/conda-bld/requests_1641824580448/work
+rsa @ file:///tmp/build/80754af9/rsa_1614366226499/work
 scipy @ file:///C:/ci/scipy_1641555198988/work
 sip==4.19.13
 six @ file:///tmp/build/80754af9/six_1644875935023/work
+toml @ file:///tmp/build/80754af9/toml_1616166611790/work
 tornado @ file:///C:/ci/tornado_1606942392901/work
+tqdm @ file:///C:/ci/tqdm_1650618053064/work
 typing_extensions @ file:///opt/conda/conda-bld/typing_extensions_1647553014482/work
+uritemplate @ file:///home/conda/feedstock_root/build_artifacts/uritemplate_1634152692041/work
+urllib3 @ file:///C:/ci/urllib3_1650640043075/work
 vispy @ file:///D:/bld/vispy_1650324005266/work
+win-inet-pton @ file:///C:/ci/win_inet_pton_1605306167264/work
 wincertstore==0.2
 xipppy @ file:///C:/Users/Radu/Documents/GitHub/rippleViewer/wheels/xipppy-0.16.19-cp38-cp38-win_amd64.whl
+yarl @ file:///C:/ci/yarl_1606940076464/work

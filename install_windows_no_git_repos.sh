@@ -32,8 +32,9 @@ for FILE in ./wheels/*.whl; do
 done
 
 RepoList=(\
-"${HOME}/Documents/GitHub/pyacq" \
 "${HOME}/Documents/GitHub/ephyviewer" \
+"${HOME}/Documents/GitHub/pyacq" \
+"${HOME}/Documents/GitHub/neurotic" \
 )
 
 # Install other repos

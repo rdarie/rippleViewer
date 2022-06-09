@@ -39,11 +39,13 @@ GitRepoRoot="https://github.com/rdarie/"
 RepoList=(\
 "pyacq" \
 "ephyviewer" \
+"neurotic"
 )
 
 RepoOptsList=(\
 "" \
 " -b rippleViewer" \
+"" \
 )
 
 cd $ENVDIR
