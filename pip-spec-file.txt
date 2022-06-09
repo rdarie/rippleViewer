@@ -14,7 +14,7 @@ colorama @ file:///tmp/build/80754af9/colorama_1607707115595/work
 cryptography @ file:///C:/ci/cryptography_1652101772384/work
 cycler @ file:///tmp/build/80754af9/cycler_1637851556182/work
 decorator @ file:///opt/conda/conda-bld/decorator_1643638310831/work
--e git+https://github.com/rdarie/ephyviewer.git@679e1f6327bc2eaa26dcc8d81394ddd1c6f3893b#egg=ephyviewer
+-e git+https://github.com/rdarie/ephyviewer.git@363e41469cc5e59946bf100ea3a029ecb9b4c3f8#egg=ephyviewer
 fonttools==4.25.0
 freetype-py @ file:///Users/ktietz/demo/mc3/conda-bld/freetype-py_1629367757594/work
 frozenlist @ file:///C:/ci/frozenlist_1637767289747/work
@@ -29,6 +29,7 @@ hsluv @ file:///Users/ktietz/demo/mc3/conda-bld/hsluv_1629367907988/work
 httplib2 @ file:///home/conda/feedstock_root/build_artifacts/httplib2_1644593570376/work
 idna @ file:///tmp/build/80754af9/idna_1637925883363/work
 imageio @ file:///tmp/build/80754af9/imageio_1617700267927/work
+Jinja2 @ file:///opt/conda/conda-bld/jinja2_1647436528585/work
 kiwisolver @ file:///C:/ci/kiwisolver_1653292408254/work
 Mako @ file:///tmp/build/80754af9/mako_1610650590832/work
 MarkupSafe @ file:///C:/ci/markupsafe_1654489871526/work
@@ -49,7 +50,7 @@ pandas @ file:///C:/ci/pandas_1650373491186/work
 Pillow==9.0.1
 platformdirs @ file:///tmp/build/80754af9/platformdirs_1638968569495/work
 protobuf==3.20.1
--e git+https://github.com/rdarie/pyacq.git@115e88d0f5b2c904f1d63ec91b8ae21ab8e55d01#egg=pyacq
+-e git+https://github.com/rdarie/pyacq.git@bf3fb32f53e80dcd72ca4559a8f780188f218593#egg=pyacq
 pyasn1 @ file:///Users/ktietz/demo/mc3/conda-bld/pyasn1_1629708007385/work
 pyasn1-modules==0.2.8
 PyAudio==0.2.11

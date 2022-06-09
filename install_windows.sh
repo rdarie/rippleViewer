@@ -3,14 +3,13 @@
 # activate conda
 source ~/.bashrc
 conda config --append channels conda-forge
-# remove if exists
+#
 export PYTHONPATH="${HOME}/.conda/envs/rippleViewer/Lib/site-packages"
-conda remove -n rippleViewer --all --yes
+echo $PYTHONPATH
+# remove env if exists
+# conda remove -n rippleViewer --all --yes
 rm -rf "${HOME}/.conda/envs/rippleViewer/*"
 #
-ENVDIR="${HOME}/rippleViewerEnv"
-rm -rf $ENVDIR
-mkdir $ENVDIR
 # create environment
 conda create -n rippleViewer --file requirements.txt --yes
 
@@ -33,43 +32,62 @@ for FILE in ./wheels/*.whl; do
     pip install "${FILE}" --no-deps --upgrade
 done
 
-
 GitRepoRoot="https://github.com/rdarie/"
+GitFolder="${HOME}/Documents/GitHub"
 
 RepoList=(\
-"pyacq" \
 "ephyviewer" \
+"pyacq" \
 "neurotic"
 )
 
 RepoOptsList=(\
-"" \
 " -b rippleViewer" \
+"" \
 "" \
 )
 
-cd $ENVDIR
-# clone and install other repos
-for i in ${!RepoList[@]}; do
-    echo $i
-    # clone the repo
-    repoOpts=${RepoOptsList[i]}
-    echo "repoOpts =${repoOpts}"
-    repoName=${RepoList[i]}
-    echo "repoName =${repoName}"
-    #
-    echo "Cloning ${GitRepoRoot}${repoName}.git${repoOpts}"
-    eval "git clone ${GitRepoRoot}${repoName}.git${repoOpts}"
-    
-    echo "Installing "$GitRepoRoot$repoName
-    # enter this repo
-    cd $repoName
-    pwd
-    python setup.py develop --install-dir=$PYTHONPATH --no-deps
-    cd $ENVDIR
-done
+cloneRepos="False"
 
-cd rippleViewer
+if [$cloneRepos = "True"] ; then
+    # make directory for cloned repos
+    ENVDIR="${HOME}/rippleViewerEnv"
+    rm -rf $ENVDIR
+    mkdir $ENVDIR
+    cd $ENVDIR
+    # clone and install other repos
+    for i in ${!RepoList[@]}; do
+        echo $i
+        # clone the repo
+        repoOpts=${RepoOptsList[i]}
+        echo "repoOpts =${repoOpts}"
+        repoName=${RepoList[i]}
+        echo "repoName =${repoName}"
+        #
+        echo "Cloning ${GitRepoRoot}${repoName}.git${repoOpts}"
+        eval "git clone ${GitRepoRoot}${repoName}.git${repoOpts}"
+        #
+        echo "Installing "$GitRepoRoot$repoName
+        # enter this repo
+        cd $repoName
+        pwd
+        python setup.py develop --install-dir=$PYTHONPATH --no-deps
+        cd $ENVDIR
+    done
+else
+    # Install other repos
+    for i in ${!RepoList[@]}; do
+        echo $i
+        repoName=${RepoList[i]}
+        echo "Installing: ${repoName}"
+        #
+        # enter this repo
+        cd "${GitFolder}/${repoName}"
+        python setup.py develop --install-dir=$PYTHONPATH --no-deps
+    done
+fi
+
+cd "${GitFolder}/rippleViewer"
 
 conda list --explicit > ./conda-spec-file.txt
 pip freeze > ./pip-spec-file.txt

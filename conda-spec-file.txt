@@ -74,6 +74,7 @@ https://repo.anaconda.com/pkgs/main/noarch/fonttools-4.25.0-pyhd3eb1b0_0.conda
 https://repo.anaconda.com/pkgs/main/noarch/freetype-py-2.2.0-pyhd3eb1b0_0.conda
 https://repo.anaconda.com/pkgs/main/win-64/googleapis-common-protos-1.53.0-py38h2eaa2aa_0.conda
 https://conda.anaconda.org/conda-forge/noarch/httplib2-0.20.4-pyhd8ed1ab_0.tar.bz2
+https://repo.anaconda.com/pkgs/main/noarch/jinja2-3.0.3-pyhd3eb1b0_0.conda
 https://repo.anaconda.com/pkgs/main/noarch/mako-1.1.4-pyhd3eb1b0_0.conda
 https://repo.anaconda.com/pkgs/main/win-64/mkl-service-2.4.0-py38h2bbff1b_0.conda
 https://repo.anaconda.com/pkgs/main/noarch/packaging-21.3-pyhd3eb1b0_0.conda

@@ -26,3 +26,5 @@ PyDrive2
 pyyaml
 tqdm
 toml
+# for pandas html output
+jinja2
