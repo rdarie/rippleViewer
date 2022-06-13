@@ -89,6 +89,9 @@ fi
 
 cd "${GitFolder}/rippleViewer"
 
+python setup.py develop --install-dir=$PYTHONPATH --no-deps
+
+
 conda list --explicit > ./conda-spec-file.txt
 pip freeze > ./pip-spec-file.txt
 

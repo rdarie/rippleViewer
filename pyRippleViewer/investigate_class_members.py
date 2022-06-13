@@ -8,6 +8,8 @@ Simple example of a custom Node class that generates a stream of random
 values. 
 
 """
+import sys
+import pandas as pd
 from pyacq.core import create_manager
 from pyqtgraph.Qt import QtCore, QtGui
 from pyacq.devices import XipppyBuffer
@@ -31,9 +33,11 @@ app = ephyviewer.mkQApp()
 man = create_manager()
 #
 nodegroup_dev = man.create_nodegroup()
-dev = nodegroup_dev.create_node('XipppyBuffer', name='nip0')
+dev = nodegroup_dev.create_node('XipppyBuffer', name='nip0', dummy=True)
+# dev = XipppyBuffer(name='nip0', dummy=True)
+#
 requestedChannels = {
-    # 'hi-res': [2,3,8]
+    signalTypeToPlot: [2, 3, 8]
     }
 dev.configure(
     sample_interval_sec=50e-3, sample_chunksize_sec=20e-3,
@@ -91,28 +95,25 @@ if showTFR:
 else:
     tfr = None
 
-if False:
-    bufferSource = InputStreamAnalogSignalSource(osc.input)
-    ephy_trace_viewer = ephyviewer.TraceViewer(source=bufferSource, name='ephy_viewer')
-else:
-    #signals
-    sigs = np.random.rand(100000,16)
-    sample_rate = 1000.
-    t_start = 0.
-    #Create a datasource for the viewer
-    # here we use InMemoryAnalogSignalSource but
-    # you can alose use your custum datasource by inheritance
-    source = ephyviewer.InMemoryAnalogSignalSource(sigs, sample_rate, t_start)
-    #create a viewer for signal with TraceViewer
-    # TraceViewer normally accept a AnalogSignalSource but
-    # TraceViewer.from_numpy is facitilty function to bypass that
-    ephy_trace_viewer = ephyviewer.TraceViewer(source=source, name='ephy_viewer')
-
-# Create a remote oscilloscope node to view the Ripple stream
+#signals
+sigs = np.random.rand(100000,16)
+sample_rate = 1000.
+t_start = 0.
+#Create a datasource for the viewer
+# here we use InMemoryAnalogSignalSource but
+# you can alose use your custum datasource by inheritance
+source = ephyviewer.InMemoryAnalogSignalSource(sigs, sample_rate, t_start)
+#create a viewer for signal with TraceViewer
+# TraceViewer normally accept a AnalogSignalSource but
+# TraceViewer.from_numpy is facitilty function to bypass that
+ephy_trace_viewer = ephyviewer.TraceViewer(source=source, name='ephy_viewer')
+#
+# Create a remote ephyviewer TraceViewer node to view the Ripple stream
+# TODO: can't have local mainviewer with remote viewers
 # nodegroup_trace_viewer = man.create_nodegroup()
 # pyacq_trace_viewer = nodegroup_trace_viewer.create_node('TraceViewer', name='pyacq_viewer')
 #
-# Create a local scope
+# Create a local ephyviewer TraceViewer...
 pyacq_trace_viewer = pyacq.viewers.TraceViewer(name='pyacq_viewer')
 #
 pyacq_trace_viewer.configure(
@@ -121,12 +122,13 @@ pyacq_trace_viewer.input.connect(dev.outputs[signalTypeToPlot])
 pyacq_trace_viewer.initialize()
 pyacq_trace_viewer.show()
 
-# epochAnnotatorSource = NeuroticWritableEpochSource(
-#     filename='./test_annotations.csv', possible_labels=['label1', 'another_label'],
-#     color_labels=None, channel_name='', backup=True)
-epochAnnotatorSource = ephyviewer.CsvEpochSource(
+epochAnnotatorSource = NeuroticWritableEpochSource(
     filename='./test_annotations.csv', possible_labels=['label1', 'another_label'],
-    color_labels=None, channel_name='')
+    color_labels=None, channel_name='', backup=True)
+# 
+# epochAnnotatorSource = ephyviewer.CsvEpochSource(
+#     filename='./test_annotations.csv', possible_labels=['label1', 'another_label'],
+#     color_labels=None, channel_name='')
 
 epochAnnotator = ephyviewer.EpochEncoder(source=epochAnnotatorSource)
 #Create the main window that can contain several viewers
@@ -135,7 +137,7 @@ ephyWin = ephyviewer.MainViewer(
     navigationToolBarClass=ephyviewer.PyAcqNavigationToolBar
     )
 
-# ephyWin.add_view(ephy_trace_viewer)
+ephyWin.add_view(ephy_trace_viewer)
 ephyWin.add_view(pyacq_trace_viewer)
 ephyWin.add_view(epochAnnotator)
 ephyWin.show()
@@ -147,30 +149,30 @@ for node in [dev, osc, tfr]:
         node.start()
 
 if __name__ == '__main__':
-    import sys
-    if True:
-        import pandas as pd
-        propsList = {
-            'QtGui.QWidget': sorted(dir(QtGui.QWidget)),
-            'ephyTraceViewer': sorted(dir(ephy_trace_viewer)),
-            'pyacqTraceViewer': sorted(dir(pyacq_trace_viewer)),
-            'QOscilloscope': sorted(dir(osc))
-            }
-        allProps = np.setdiff1d(
-            np.union1d(
-                np.union1d(propsList['ephyTraceViewer'], propsList['pyacqTraceViewer']), propsList['QOscilloscope']),
-            propsList['QtGui.QWidget'])
-        propsPresent = pd.DataFrame({
-            key: [(propName in propsList[key]) for propName in allProps]
-            for key in ['pyacqTraceViewer', 'ephyTraceViewer', 'QOscilloscope']
-            }, index=allProps)
-        def color_boolean(val):
-            color =''
-            if val == True:
-                color = 'green'
-            elif val == False:
-                color = 'red'
-            return 'background-color: {}'.format(color)
-        propsPresent.style.applymap(color_boolean).to_html('viewer_props.html')
+    propsList = {
+        'QtGui.QWidget': sorted(dir(QtGui.QWidget)),
+        'ephyTraceViewer': sorted(dir(ephy_trace_viewer)),
+        'pyacqTraceViewer': sorted(dir(pyacq_trace_viewer)),
+        'QOscilloscope': sorted(dir(osc))
+        }
+
+    allProps = np.setdiff1d(
+        np.union1d(
+            np.union1d(propsList['ephyTraceViewer'], propsList['pyacqTraceViewer']), propsList['QOscilloscope']),
+        propsList['QtGui.QWidget'])
+    propsPresent = pd.DataFrame({
+        key: [(propName in propsList[key]) for propName in allProps]
+        for key in ['pyacqTraceViewer', 'ephyTraceViewer', 'QOscilloscope']
+        }, index=allProps)
+
+    def color_boolean(val):
+        color =''
+        if val == True:
+            color = 'green'
+        elif val == False:
+            color = 'red'
+        return 'background-color: {}'.format(color)
+    propsPresent.style.applymap(color_boolean).to_html('viewer_props.html')
+
     if sys.flags.interactive == 0:
         app.exec_()
