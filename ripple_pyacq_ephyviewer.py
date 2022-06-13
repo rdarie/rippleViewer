@@ -14,6 +14,8 @@ from pyacq.devices import XipppyBuffer
 from pyacq.devices.ripple import ripple_signal_types
 from pyacq.viewers import QTimeFreq, QOscilloscope, TraceViewer, InputStreamAnalogSignalSource
 import ephyviewer
+from neurotic import NeuroticWritableEpochSource
+
 import numpy as np
 import pdb
 import pyacq
@@ -114,11 +116,19 @@ else:
 pyacq_trace_viewer = pyacq.viewers.TraceViewer(name='pyacq_viewer')
 #
 pyacq_trace_viewer.configure(
-    with_user_dialog=True, window_label='pyacq_scope0', max_xsize=20.)
+    with_user_dialog=True, window_label='pyacq_scope0', max_xsize=120.)
 pyacq_trace_viewer.input.connect(dev.outputs[signalTypeToPlot])
 pyacq_trace_viewer.initialize()
 pyacq_trace_viewer.show()
 
+# epochAnnotatorSource = NeuroticWritableEpochSource(
+#     filename='./test_annotations.csv', possible_labels=['label1', 'another_label'],
+#     color_labels=None, channel_name='', backup=True)
+epochAnnotatorSource = ephyviewer.CsvEpochSource(
+    filename='./test_annotations.csv', possible_labels=['label1', 'another_label'],
+    color_labels=None, channel_name='')
+
+epochAnnotator = ephyviewer.EpochEncoder(source=epochAnnotatorSource)
 #Create the main window that can contain several viewers
 ephyWin = ephyviewer.MainViewer(
     debug=False, show_auto_scale=True,
@@ -127,6 +137,7 @@ ephyWin = ephyviewer.MainViewer(
 
 # ephyWin.add_view(ephy_trace_viewer)
 ephyWin.add_view(pyacq_trace_viewer)
+ephyWin.add_view(epochAnnotator)
 ephyWin.show()
 
 pyacq_trace_viewer.start()
