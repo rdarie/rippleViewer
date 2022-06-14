@@ -28,3 +28,6 @@ tqdm
 toml
 # for pandas html output
 jinja2
+# for profiling
+line_profiler
+psutil

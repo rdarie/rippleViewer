@@ -8,7 +8,7 @@ export PYTHONPATH="${HOME}/.conda/envs/rippleViewer/Lib/site-packages"
 echo $PYTHONPATH
 # remove env if exists
 # conda remove -n rippleViewer --all --yes
-rm -rf "${HOME}/.conda/envs/rippleViewer/*"
+rm -rf "${HOME}/.conda/envs/rippleViewer"
 #
 # create environment
 conda create -n rippleViewer --file requirements.txt --yes
@@ -20,6 +20,7 @@ read FILLER
 conda activate rippleViewer
 
 WHEEL_PREREQS=(\
+    "yappi"
 )
 
 for PREREQ in ${WHEEL_PREREQS[*]}; do
@@ -49,7 +50,7 @@ RepoOptsList=(\
 
 cloneRepos="False"
 
-if [$cloneRepos = "True"] ; then
+if [$cloneRepos = "True"]; then
     # make directory for cloned repos
     ENVDIR="${HOME}/rippleViewerEnv"
     rm -rf $ENVDIR
@@ -90,7 +91,6 @@ fi
 cd "${GitFolder}/rippleViewer"
 
 python setup.py develop --install-dir=$PYTHONPATH --no-deps
-
 
 conda list --explicit > ./conda-spec-file.txt
 pip freeze > ./pip-spec-file.txt
