@@ -37,6 +37,7 @@ https://repo.anaconda.com/pkgs/main/noarch/charset-normalizer-2.0.4-pyhd3eb1b0_0
 https://repo.anaconda.com/pkgs/main/noarch/colorama-0.4.4-pyhd3eb1b0_0.conda
 https://repo.anaconda.com/pkgs/main/noarch/cycler-0.11.0-pyhd3eb1b0_0.conda
 https://repo.anaconda.com/pkgs/main/noarch/decorator-5.1.1-pyhd3eb1b0_0.conda
+https://repo.anaconda.com/pkgs/main/noarch/dill-0.3.4-pyhd3eb1b0_0.conda
 https://repo.anaconda.com/pkgs/main/noarch/executing-0.8.3-pyhd3eb1b0_0.conda
 https://repo.anaconda.com/pkgs/main/win-64/freetype-2.10.4-hd328e21_0.conda
 https://repo.anaconda.com/pkgs/main/win-64/frozenlist-1.2.0-py38h2bbff1b_0.conda

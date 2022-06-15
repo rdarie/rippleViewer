@@ -16,6 +16,7 @@ colorama @ file:///tmp/build/80754af9/colorama_1607707115595/work
 cryptography @ file:///C:/ci/cryptography_1652101772384/work
 cycler @ file:///tmp/build/80754af9/cycler_1637851556182/work
 decorator @ file:///opt/conda/conda-bld/decorator_1643638310831/work
+dill @ file:///tmp/build/80754af9/dill_1623919422540/work
 -e git+https://github.com/rdarie/ephyviewer.git@74d717ac205766ea757e44d780146db52bfedd3e#egg=ephyviewer
 executing @ file:///opt/conda/conda-bld/executing_1646925071911/work
 fonttools==4.25.0
@@ -73,7 +74,7 @@ pyopencl==2022.1.5
 pyOpenSSL @ file:///opt/conda/conda-bld/pyopenssl_1643788558760/work
 pyparsing @ file:///tmp/build/80754af9/pyparsing_1635766073266/work
 pyqtgraph @ file:///tmp/build/80754af9/pyqtgraph_1594064840332/work
--e git+https://github.com/rdarie/rippleViewer.git@438238dc972d57bf465667dcdf93eba306c9a298#egg=pyRippleViewer
+-e git+https://github.com/rdarie/rippleViewer.git@1a4df20ed2773efc0bd7e711fcd1eeac90f45872#egg=pyRippleViewer
 pyserial==3.5
 PySocks @ file:///C:/ci/pysocks_1605287845585/work
 python-dateutil @ file:///tmp/build/80754af9/python-dateutil_1626374649649/work

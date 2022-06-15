@@ -194,7 +194,9 @@ if __name__ == '__main__':
             yappi.start()
             start_time = time.time()
 
+        ######################
         app.exec_()
+        ######################
         
         if runProfiler:
             yappi.stop()
@@ -203,9 +205,9 @@ if __name__ == '__main__':
             from datetime import datetime as dt
             now = dt.now()
             dateStr = now.strftime('%Y%m%d')
-            timeStr = now.strftime('H%M')
+            timeStr = now.strftime('%H%M')
             profilerResultsFileName = '{}_{}'.format(
-                timeStr, __file__.split('.')[0])
+                __file__.split('.')[0], timeStr)
             profilerResultsFolder = '../yappi_profiler_outputs/{}'.format(dateStr)
             ###
             minimum_time = 1e-1
@@ -218,7 +220,8 @@ if __name__ == '__main__':
 
             def processYappiResults(
                     fileName=None, folder=None,
-                    minimum_time=None, modulesToPrint=[]
+                    minimum_time=None, modulesToPrint=[],
+                    metadata={}
                     ):
                 attributesToPrint = [
                     'ctx_name', 'ctx_id', 'name', 'lineno',
@@ -239,31 +242,13 @@ if __name__ == '__main__':
                     'ctx_name': 'name of the underlying context(thread)',
                     'full_name': 'unique full name of the executed function',
                     }
+                clockType = yappi.get_clock_type()
+                fileName = fileName + '_{}_time'.format(clockType)
                 ##
                 if not os.path.exists(folder):
                     os.makedirs(folder, exist_ok=True)
                 profilerResultsPath = os.path.join(
                     folder, fileName)
-                '''
-                attributesToPrint = ['name', 'ncall', 'ttot', 'tsub', 'tavg', 'module', 'lineno']
-                threads = yappi.get_thread_stats()
-                yStatsDict = {}
-                for thread in threads:
-                    yStats = yappi.get_func_stats(ctx_id=thread.id)
-                    yStatsDictThisThread = {
-                        attrName: []
-                        for attrName in attributesToPrint
-                        }
-                    for ySt in yStats:
-                        if ySt is not None:
-                            if minimum_time is not None:
-                                if ySt.ttot < minimum_time:
-                                    continue
-                            for attrName in attributesToPrint:
-                                yStatsDictThisThread[attrName].append(ySt.__getattribute__(attrName))
-                    yStatsDict[(thread.name, thread.id)] = pd.DataFrame(yStatsDictThisThread).set_index(['name', 'lineno'])
-                yStatsDF = pd.concat(yStatsDict, names=['ctx_name', 'ctx_id'])
-                '''
                 yStats = yappi.get_func_stats()
                 yStatsDict = {
                         attrName: []
@@ -295,15 +280,17 @@ if __name__ == '__main__':
                             {"selector": "tbody td", "props": [("border", "1px solid grey")]},
                             {"selector": "th", "props": [("border", "1px solid grey")]}
                             ]))
-                clockType = yappi.get_clock_type()
-                style.to_html(profilerResultsPath + '_{}_time.html'.format(clockType))
+                style.to_html(profilerResultsPath + '.html')
+                with open(profilerResultsPath + '_run_metadata.pickle', 'wb') as handle:
+                    pickle.dump(metadata, handle)
+
                 threads = yappi.get_thread_stats()
                 for thread in threads:
                     yStatsThisThread = yappi.get_func_stats(ctx_id=thread.id)
                     threadName = thread.name.replace('/', '').replace("\\", '')
-                    yStatsThisThread.save(profilerResultsPath + '_{}_time_thread_{}_{}.pstat'.format(
-                        clockType, thread.id, threadName), type='pstat')
+                    yStatsThisThread.save(profilerResultsPath + '_thread_{}_{}.pstat'.format(
+                        thread.id, threadName), type='pstat')
             
             processYappiResults(
                 fileName=profilerResultsFileName, folder=profilerResultsFolder,
-                minimum_time=minimum_time, modulesToPrint=modulesToPrint)
+                minimum_time=minimum_time, modulesToPrint=modulesToPrint, metadata=runMetadata)
