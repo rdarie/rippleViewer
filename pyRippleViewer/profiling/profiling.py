@@ -6,12 +6,33 @@ import pandas as pd
 import collections
 import line_profiler
 import pdb
+import dill as pickle
+import yappi
 
 from PyQt5.QtCore import pyqtRemoveInputHook, pyqtRestoreInputHook
 from inspect import getmembers, isfunction, isclass
 
 psutil_process = psutil.Process(os.getpid())
 startTime = 0
+
+runProfiler = True
+
+yappiNameExplanations = {
+    'name': 'name of the executed function',
+    'module': 'module name of the executed function',
+    'lineno': 'line number of the executed function',
+    'ncall': 'number of times the executed function is called.',
+    'nactualcall': 'number of times the executed function is called, excluding the recursive calls.',
+    'builtin': 'bool, indicating whether the executed function is a builtin',
+    'ttot': 'total time spent in the executed function (ttot)',
+    'tsub': 'total time spent in the executed function, excluding subcalls (tsub)',
+    'tavg': 'per-call average total time spent in the executed function (tavg)',
+    'index': 'unique id for the YFuncStat object',
+    'children': 'list of YChildFuncStat objects',
+    'ctx_id': 'id of the underlying context (thread)',
+    'ctx_name': 'name of the underlying context (thread)',
+    'full_name': 'unique full name of the executed function',
+    }
 
 def memory_usage_psutil():
     # return the memory usage in MB
@@ -191,3 +212,69 @@ def debugTrace():
         debugger.interaction(user_frame, None)
     finally:
         pyqtRestoreInputHook()
+
+def processYappiResults(
+        fileName=None, folder=None,
+        minimum_time=None, modulesToPrint=[],
+        run_time=0., metadata={}
+        ):
+    attributesToPrint = [
+        'ctx_id', 'ctx_name', 'name', 'lineno',
+        'ncall', 'ttot', 'tsub', 'tavg', 'module']
+    clockType = yappi.get_clock_type()
+    fileName = fileName + '_{}_time'.format(clockType)
+    ##
+    if not os.path.exists(folder):
+        os.makedirs(folder, exist_ok=True)
+    profilerResultsPath = os.path.join(
+        folder, fileName)
+    yStats = yappi.get_func_stats()
+    yStatsDict = {
+            attrName: []
+            for attrName in attributesToPrint
+            }
+    for ySt in yStats:
+        if ySt is not None:
+            if minimum_time is not None:
+                if ySt.ttot < minimum_time:
+                    continue
+            for attrName in attributesToPrint:
+                yStatsDict[attrName].append(ySt.__getattribute__(attrName))
+    yStatsDF = pd.DataFrame(yStatsDict)
+    yStatsDF.sort_values(['ctx_id', 'ttot'], ascending=[True, False], inplace=True)
+    if len(modulesToPrint):
+        keepList = [os.path.dirname(mod.__path__[0]) for mod in modulesToPrint]
+        mask = pd.concat([yStatsDF['module'].apply(lambda x: modPath in x) for modPath in keepList], axis='columns').any(axis='columns')
+        yStatsDF = yStatsDF.loc[mask, :]
+    runCaption = "Run lasted {:g} sec. ({} time)".format(run_time, clockType)
+    style = (
+        yStatsDF.rename(columns=yappiNameExplanations).style
+            .set_caption(runCaption)
+            .background_gradient(axis=0, subset=yappiNameExplanations['ttot'])
+            .background_gradient(axis=0, subset=yappiNameExplanations['tavg'], cmap="YlOrBr")
+            .set_sticky(axis="columns")
+            .hide(axis='index')
+            .set_table_styles([
+                {"selector": "", "props": [("border", "1px solid grey")]},
+                {"selector": "tbody td", "props": [("border", "1px solid grey")]},
+                {"selector": "th", "props": [("border", "1px solid grey")]}
+                ]))
+    style.to_html(profilerResultsPath + '.html')
+    with open(profilerResultsPath + '_run_metadata.pickle', 'wb') as handle:
+        pickle.dump(metadata, handle)
+    yStats.save(profilerResultsPath + '.ystat', type="ystat")
+    #
+    threads = yappi.get_thread_stats()
+    for thread in threads:
+        yStatsThisThread = yappi.get_func_stats(ctx_id=thread.id)
+        threadName = thread.name.replace('/', '').replace("\\", '')
+        # visualize .pstat results with snakeviz
+        # https://jiffyclub.github.io/snakeviz/
+        yStatsThisThread.save(profilerResultsPath + '_thread_{}_{}.pstat'.format(
+            thread.id, threadName), type='pstat')
+        # visualize .callgrind results with kcachegrindwin on linux
+        # Or, on windows, qcachegrindwin, available precompiled at
+        # https://sourceforge.net/projects/qcachegrindwin/
+        yStatsThisThread.save(profilerResultsPath + '_thread_{}_{}.callgrind'.format(
+            thread.id, threadName), type='callgrind')
+            

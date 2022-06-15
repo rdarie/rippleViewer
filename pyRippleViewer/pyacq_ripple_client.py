@@ -10,61 +10,46 @@ values.
 """
 import sys
 import pyacq as pq
+import pyqtgraph as pg
 import ephyviewer
 import neurotic
-import pdb
+import pdb, re
+from pyRippleViewer import runProfiler
 #
+
+usage = """Usage:
+    python pyacq_ripple_host.py [address]
+
+# Examples:
+python host_server.py tcp://10.0.0.100:5000
+python host_server.py tcp://10.0.0.100:*
+"""
+
+if len(sys.argv) == 2:
+    rpc_addr = sys.argv[1]
+else:
+    rpc_addr = 'tcp://127.0.0.1:5001'
+    
+if not re.match(r'tcp://(\*|([0-9\.]+)):(\*|[0-9]+)', rpc_addr):
+    sys.stderr.write(usage)
+    sys.exit(-1)
+
 showScope = False
 showTFR = False
 showEphyTraceViewer = True
 showEphyFrequencyViewer = True
 showEphyAnnotator = False
-
-dummyKWArgs = {
-    'hires_fun': pq.randomSineGenerator(
-        centerFreq=20, sr=2000, noiseStd=0.05, sineAmp=1.),
-    # 'hifreq_fun': pq.randomSineGenerator(
-    #     centerFreq=40, dt=15000, noiseStd=0.05, sineAmp=1.),
-    'hifreq_fun': pq.randomChirpGenerator(
-        startFreq=10, stopFreq=40, freqPeriod=2.,
-        sr=15000, noiseStd=0.05, sineAmp=1.),
-    'signal_type_lookup': {'hifreq': [eNum for eNum in range(1, 129)]}
-    }
-
-'''fun = dummyKWArgs['hifreq_fun']
-hifreq_data, timestamp = dummyKWArgs['hifreq_fun'](npoints=20000, elecs=[1,2,3], start_timestamp=3.5e4)
-hires_data, timestamp = dummyKWArgs['hires_fun'](npoints=20000, elecs=[1,2,3], start_timestamp=3.5e4)
-from matplotlib import pyplot as plt
-plt.plot(hires_data.reshape((20000, 3), order='F')); plt.show()'''
-
-# Start Qt application
-app = ephyviewer.mkQApp()
-
-# Create a manager to spawn worker process to record and process audio
-# man = pq.create_manager()
-#
-# nodegroup_dev = man.create_nodegroup()
-# dev = nodegroup_dev.create_node(
-#     'XipppyBuffer', name='nip0')
-dev = pq.XipppyBuffer(
-    name='nip0', dummy=True,
-    dummy_kwargs=dummyKWArgs)
-#
-requestedChannels = {
-    # 'hi-res': [2, 3, 8],
-    # 'hifreq': [2, 3, 12]
-    }
 signalTypesToPlot = ['hifreq', 'hi-res']
 
-dev.configure(
-    sample_interval_sec=50e-3, sample_chunksize_sec=50e-3,
-    channels=requestedChannels, verbose=False, debugging=False)
-for signalType in pq.ripple_signal_types:
-    dev.outputs[signalType].configure(
-        protocol='tcp', transfermode='sharedmem', double=True
-        # protocol='tcp', interface='127.0.0.1', transfermode='plaindata'
-        )
-dev.initialize()
+# Start Qt application
+app = pg.mkQApp()
+
+# In host/process/thread 2: (you must communicate rpc_addr manually)
+client = pq.RPCClient.get_client(rpc_addr)
+
+# Get a proxy to published object; use this (almost) exactly as you
+# would a local object:
+dev = client['nip0']
 
 if showScope:
     # Create a remote oscilloscope node to view the Ripple stream
@@ -152,7 +137,6 @@ if showEphyAnnotator:
     # epochAnnotatorSource = ephyviewer.CsvEpochSource(
     #     filename='./test_annotations.csv', possible_labels=['label1', 'another_label'],
     #     color_labels=None, channel_name='')
-
     epochAnnotator = ephyviewer.EpochEncoder(source=epochAnnotatorSource, name='epoch')
 
 #Create the main window that can contain several viewers
@@ -179,30 +163,13 @@ if showEphyAnnotator:
 
 
 # start nodes
-for node in [dev, osc, tfr] + ephy_scope_list:
+for node in [osc, tfr] + ephy_scope_list:
     if node is not None:
         node.start()
 
-runProfiler = True
 if __name__ == '__main__':
     if sys.flags.interactive == 0:
         if runProfiler:
-            import yappi, time
-            from pyRippleViewer.profiling import profiling as prf
-            yappiClockType = "cpu"
-            yappi.set_clock_type(yappiClockType) # Use set_clock_type("wall") for wall time
-            yappi.start()
-            start_time = time.perf_counter()
-
-        ######################
-        app.exec_()
-        ######################
-        
-        if runProfiler:
-            yappi.stop()
-            stop_time = time.perf_counter()
-            run_time = stop_time - start_time
-            ##
             from datetime import datetime as dt
             import os
             now = dt.now()
@@ -211,12 +178,24 @@ if __name__ == '__main__':
             profilerResultsFileName = '{}_{}_pid_{}'.format(
                 __file__.split('.')[0], timeStr, os.getpid())
             profilerResultsFolder = '../yappi_profiler_outputs/{}'.format(dateStr)
-            ###
+            ##
+            import yappi, time
+            yappiClockType = 'cpu'
+            yappi.set_clock_type(yappiClockType) # Use set_clock_type("wall") for wall time
+            yappi.start()
+            start_time = time.perf_counter()
+        ######################
+        app.exec_()
+        ######################
+        if runProfiler:
+            yappi.stop()
+            stop_time = time.perf_counter()
+            run_time = stop_time - start_time
+            ##
             minimum_time = 1e-1
             modulesToPrint = []  # [pq, ephyviewer]
             runMetadata = {}
-            ###
-            
+            from pyRippleViewer.profiling import profiling as prf
             prf.processYappiResults(
                 fileName=profilerResultsFileName, folder=profilerResultsFolder,
                 minimum_time=minimum_time, modulesToPrint=modulesToPrint,
