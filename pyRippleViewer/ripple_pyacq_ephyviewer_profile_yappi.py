@@ -13,6 +13,7 @@ import pyacq as pq
 import ephyviewer
 import neurotic
 import yappi
+import time
 import pdb
 #
 showScope = False
@@ -186,9 +187,13 @@ for node in [dev, osc, tfr] + ephy_scope_list:
 
 if __name__ == '__main__':
     if sys.flags.interactive == 0:
+        yappiClockType = "cpu"
+        yappi.set_clock_type(yappiClockType) # Use set_clock_type("wall") for wall time
         yappi.start()
+        start_time = time.time()
         app.exec_()
         yappi.stop()
+        stop_time = time.time()
         ##
         from datetime import datetime as dt
         import os
@@ -200,14 +205,29 @@ if __name__ == '__main__':
         if not os.path.exists(profilerResultsFolder):
             os.makedirs(profilerResultsFolder, exist_ok=True)
         profilerResultsPath = os.path.join(profilerResultsFolder, profilerResultsFileName)
-        threads = yappi.get_thread_stats()
         minimum_time = 1e-1
-        yStatsDict = {}
-        attributesToPrint = ['name', 'ncall', 'ttot', 'tsub', 'tavg', 'module', 'lineno']
         modulesToPrint = []  # [pq, ephyviewer]
-        filter_callback = lambda x: yappi.module_matches(x, [pq, ephyviewer])
+        nameExplanations = {
+            'name': 'name of the executed function',
+            'module': 'module name of the executed function',
+            'lineno': 'line number of the executed function',
+            'ncall': 'number of times the executed function is called.',
+            'nactualcall': 'number of times the executed function is called, excluding the recursive calls.',
+            'builtin': 'bool, indicating whether the executed function is a builtin',
+            'ttot': 'total time spent in the executed function',
+            'tsub': 'total time spent in the executed function, excluding subcalls',
+            'tavg': 'per-call average total time spent in the executed function.',
+            'index': 'unique id for the YFuncStat object',
+            'children': 'list of YChildFuncStat objects',
+            'ctx_id': 'id of the underlying context(thread)',
+            'ctx_name': 'name of the underlying context(thread)',
+            'full_name': 'unique full name of the executed function',
+            }
+        '''
+        attributesToPrint = ['name', 'ncall', 'ttot', 'tsub', 'tavg', 'module', 'lineno']
+        threads = yappi.get_thread_stats()
+        yStatsDict = {}
         for thread in threads:
-            print("Function stats for ({}) ({})".format(thread.name, thread.id))  # it is the Thread.__class__.__name__
             yStats = yappi.get_func_stats(ctx_id=thread.id)
             yStatsDictThisThread = {
                 attrName: []
@@ -221,18 +241,44 @@ if __name__ == '__main__':
                     for attrName in attributesToPrint:
                         yStatsDictThisThread[attrName].append(ySt.__getattribute__(attrName))
             yStatsDict[(thread.name, thread.id)] = pd.DataFrame(yStatsDictThisThread).set_index(['name', 'lineno'])
-        yStatsDF = pd.concat(yStatsDict, names=['thread name', 'thread id'])
+        yStatsDF = pd.concat(yStatsDict, names=['ctx_name', 'ctx_id'])
+        '''
+        attributesToPrint = [
+            'ctx_name', 'ctx_id', 'name', 'lineno',
+            'ncall', 'ttot', 'tsub', 'tavg', 'module']
+        yStats = yappi.get_func_stats()
+        yStatsDict = {
+                attrName: []
+                for attrName in attributesToPrint
+                }
+        for ySt in yStats:
+            if ySt is not None:
+                if minimum_time is not None:
+                    if ySt.ttot < minimum_time:
+                        continue
+                for attrName in attributesToPrint:
+                    yStatsDict[attrName].append(ySt.__getattribute__(attrName))
+        yStatsDF = pd.DataFrame(yStatsDict)
+        yStatsDF.sort_values(['ctx_id', 'ttot'], ascending=[True, False], inplace=True)
         if len(modulesToPrint):
             keepList = [os.path.dirname(mod.__path__[0]) for mod in modulesToPrint]
             mask = pd.concat([yStatsDF['module'].apply(lambda x: modPath in x) for modPath in keepList], axis='columns').any(axis='columns')
             yStatsDF = yStatsDF.loc[mask, :]
+        runCaption = "{} ran for {:g} sec. ({} time)".format(
+            __file__, stop_time - start_time, yappiClockType)
         style = (
-            yStatsDF.style
+            yStatsDF.rename(columns=nameExplanations).style
+                .set_caption(runCaption)
                 .background_gradient(axis=0, gmap=yStatsDF['ttot'])
                 .set_sticky(axis="columns")
+                .hide(axis='index')
                 .set_table_styles([
                     {"selector": "", "props": [("border", "1px solid grey")]},
                     {"selector": "tbody td", "props": [("border", "1px solid grey")]},
                     {"selector": "th", "props": [("border", "1px solid grey")]}
                     ]))
         style.to_html(profilerResultsPath + '.html')
+        threads = yappi.get_thread_stats()
+        for thread in threads:
+            yStatsThisThread = yappi.get_func_stats(ctx_id=thread.id)
+            yStatsThisThread.save(profilerResultsPath + '_{}.pstat'.format(thread.id), type='pstat')

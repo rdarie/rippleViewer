@@ -31,3 +31,5 @@ jinja2
 # for profiling
 line_profiler
 psutil
+yappi
+snakeviz

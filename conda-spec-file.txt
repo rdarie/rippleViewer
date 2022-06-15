@@ -77,7 +77,6 @@ https://repo.anaconda.com/pkgs/main/noarch/wcwidth-0.2.5-pyhd3eb1b0_0.conda
 https://repo.anaconda.com/pkgs/main/noarch/wheel-0.37.1-pyhd3eb1b0_0.conda
 https://repo.anaconda.com/pkgs/main/win-64/win_inet_pton-1.1.0-py38haa95532_0.conda
 https://repo.anaconda.com/pkgs/main/win-64/wincertstore-0.2-py38haa95532_2.conda
-# no URL for: yappi-1.3.5.dist-info
 https://repo.anaconda.com/pkgs/main/noarch/aiosignal-1.2.0-pyhd3eb1b0_0.conda
 https://repo.anaconda.com/pkgs/main/noarch/asttokens-2.0.5-pyhd3eb1b0_0.conda
 https://repo.anaconda.com/pkgs/main/win-64/cffi-1.15.0-py38h2bbff1b_1.conda
@@ -100,8 +99,10 @@ https://repo.anaconda.com/pkgs/main/noarch/python-dateutil-2.8.2-pyhd3eb1b0_0.co
 https://conda.anaconda.org/conda-forge/noarch/pytools-2022.1.9-pyhd8ed1ab_0.tar.bz2
 https://repo.anaconda.com/pkgs/main/noarch/rsa-4.7.2-pyhd3eb1b0_1.conda
 https://repo.anaconda.com/pkgs/main/win-64/setuptools-61.2.0-py38haa95532_0.conda
+https://repo.anaconda.com/pkgs/main/win-64/snakeviz-2.0.1-py38haa95532_0.conda
 https://repo.anaconda.com/pkgs/main/win-64/tqdm-4.64.0-py38haa95532_0.conda
 https://repo.anaconda.com/pkgs/main/noarch/typing-extensions-4.1.1-hd3eb1b0_0.conda
+https://conda.anaconda.org/conda-forge/win-64/yappi-1.3.5-py38hbd9d945_0.tar.bz2
 https://repo.anaconda.com/pkgs/main/win-64/yarl-1.6.3-py38h2bbff1b_0.conda
 https://repo.anaconda.com/pkgs/main/noarch/async-timeout-4.0.1-pyhd3eb1b0_0.conda
 https://repo.anaconda.com/pkgs/main/win-64/brotlipy-0.7.0-py38h2bbff1b_1003.conda

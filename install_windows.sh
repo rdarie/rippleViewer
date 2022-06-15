@@ -20,7 +20,6 @@ read FILLER
 conda activate rippleViewer
 
 WHEEL_PREREQS=(\
-    "yappi"
 )
 
 for PREREQ in ${WHEEL_PREREQS[*]}; do
