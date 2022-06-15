@@ -8,9 +8,6 @@ msgpack-python
 vispy>=0.9
 pyaudio
 pyserial
-# for eeg emotiv functionality
-# pycrypto
-# pywinusb
 # for video
 av
 imageio
@@ -33,3 +30,4 @@ line_profiler
 psutil
 yappi
 snakeviz
+dill
