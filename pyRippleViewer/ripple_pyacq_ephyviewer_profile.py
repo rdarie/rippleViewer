@@ -60,7 +60,7 @@ def wrapper():
     dev.configure(
         sample_interval_sec=50e-3, sample_chunksize_sec=50e-3,
         channels=requestedChannels, verbose=False, debugging=False)
-    for signalType in pq.ripple_signal_types:
+    for signalType in pq.ripple_analogsignal_types:
         dev.outputs[signalType].configure(
             protocol='tcp', transfermode='sharedmem', double=True
             # protocol='tcp', interface='127.0.0.1', transfermode='plaindata'

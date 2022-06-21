@@ -11,7 +11,7 @@ values.
 import sys
 from pyacq.core import create_manager
 from pyacq.devices import XipppyBuffer
-from pyacq.devices.ripple import ripple_signal_types, randomSineGenerator, randomChirpGenerator
+from pyacq.devices.ripple import ripple_analogsignal_types, randomSineGenerator, randomChirpGenerator
 from pyacq.viewers import QTimeFreq, QOscilloscope, TraceViewerNode
 import ephyviewer
 from neurotic import NeuroticWritableEpochSource
@@ -62,7 +62,7 @@ signalTypesToPlot = ['hifreq', 'hi-res']
 dev.configure(
     sample_interval_sec=50e-3, sample_chunksize_sec=50e-3,
     channels=requestedChannels, verbose=False, debugging=False)
-for signalType in ripple_signal_types:
+for signalType in ripple_analogsignal_types:
     dev.outputs[signalType].configure(
         protocol='tcp', transfermode='sharedmem', double=True
         # protocol='tcp', interface='127.0.0.1', transfermode='plaindata'

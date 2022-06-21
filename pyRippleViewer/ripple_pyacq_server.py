@@ -11,7 +11,7 @@ values.
 from pyacq.core import create_manager
 from pyqtgraph.Qt import QtCore, QtGui
 from pyacq.devices import XipppyBuffer
-from pyacq.devices.ripple import ripple_signal_types
+from pyacq.devices.ripple import ripple_analogsignal_types
 from pyacq.viewers import QTimeFreq, QOscilloscope
 
 showScope = True
@@ -32,7 +32,7 @@ requestedChannels = {
 dev.configure(
     sample_interval_sec=100e-3, sample_chunksize_sec=100e-3,
     channels=requestedChannels, verbose=False, debugging=False)
-for signalType in ripple_signal_types:
+for signalType in ripple_analogsignal_types:
     dev.outputs[signalType].configure(
         protocol='tcp', transfermode='sharedmem', double=True
         # protocol='tcp', interface='127.0.0.1', transfermode='plaindata'

@@ -38,7 +38,7 @@ showScope = False
 showTFR = False
 showEphyTraceViewer = True
 showEphyFrequencyViewer = True
-showEphyAnnotator = False
+showEphyAnnotator = True
 signalTypesToPlot = ['hifreq', 'hi-res']
 
 # Start Qt application
@@ -50,6 +50,12 @@ client = pq.RPCClient.get_client(rpc_addr)
 # Get a proxy to published object; use this (almost) exactly as you
 # would a local object:
 dev = client['nip0']
+
+# Create a monitor node
+mon = pq.StreamMonitor()
+mon.configure()
+mon.input.connect(dev.outputs['stim'])
+mon.initialize()
 
 if showScope:
     # Create a remote oscilloscope node to view the Ripple stream
@@ -163,7 +169,7 @@ if showEphyAnnotator:
 
 
 # start nodes
-for node in [osc, tfr] + ephy_scope_list:
+for node in [osc, tfr, mon] + ephy_scope_list:
     if node is not None:
         node.start()
 
