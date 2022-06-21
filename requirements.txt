@@ -1,7 +1,11 @@
 python==3.8.5
 pip
 numpy
-pyqtgraph
+pyqt
+pyqtgraph==0.12.4
+numba
+icc_rt
+numexpr
 pyzmq
 blosc
 msgpack-python

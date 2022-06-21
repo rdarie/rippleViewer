@@ -2,7 +2,8 @@
 
 # activate conda
 source ~/.bashrc
-conda config --append channels conda-forge
+conda config --add channels conda-forge
+conda config --add channels intel
 #
 export PYTHONPATH="${HOME}/.conda/envs/rippleViewer/Lib/site-packages"
 echo $PYTHONPATH
@@ -49,7 +50,7 @@ RepoOptsList=(\
 
 cloneRepos="False"
 
-if [$cloneRepos = "True"]; then
+if $cloneRepos = "True"; then
     # make directory for cloned repos
     ENVDIR="${HOME}/rippleViewerEnv"
     rm -rf $ENVDIR

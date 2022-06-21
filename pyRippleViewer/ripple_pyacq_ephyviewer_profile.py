@@ -13,6 +13,7 @@ import pyacq as pq
 import ephyviewer
 import neurotic
 import pdb
+from pyRippleViewer import runProfiler
 #
 def wrapper():
     showScope = False
@@ -47,9 +48,7 @@ def wrapper():
     # nodegroup_dev = man.create_nodegroup()
     # dev = nodegroup_dev.create_node(
     #     'XipppyBuffer', name='nip0')
-    dev = pq.XipppyBuffer(
-        name='nip0', dummy=True,
-        dummy_kwargs=dummyKWArgs)
+    dev = pq.XipppyBuffer(name='nip0', dummy=False)
     #
     requestedChannels = {
         # 'hi-res': [2, 3, 8],
@@ -58,9 +57,10 @@ def wrapper():
     signalTypesToPlot = ['hifreq', 'hi-res']
 
     dev.configure(
-        sample_interval_sec=50e-3, sample_chunksize_sec=50e-3,
+        sample_interval_sec=100e-3, sample_chunksize_sec=100e-3,
+        buffer_padding_sec=1.,
         channels=requestedChannels, verbose=False, debugging=False)
-    for signalType in pq.ripple_analogsignal_types:
+    for signalType in pq.ripple_signal_types:
         dev.outputs[signalType].configure(
             protocol='tcp', transfermode='sharedmem', double=True
             # protocol='tcp', interface='127.0.0.1', transfermode='plaindata'
@@ -124,7 +124,7 @@ def wrapper():
         for idx, signalTypeToPlot in enumerate(signalTypesToPlot):
             ephy_scope = pq.TraceViewerNode(
                 name='traceviewer_{}'.format(signalTypeToPlot),
-                controlsParentViewer=(idx == 0))
+                controls_parent=(idx == 0))
             #
             ephy_scope.configure(
                 with_user_dialog=True, max_xsize=120.)
@@ -178,7 +178,6 @@ def wrapper():
     if showEphyAnnotator:
         ephyWin.add_view(epochAnnotator)
 
-
     # start nodes
     for node in [dev, osc, tfr] + ephy_scope_list:
         if node is not None:
@@ -189,7 +188,6 @@ def wrapper():
             app.exec_()
 
 if __name__ == '__main__':
-    runProfiler = True
     if runProfiler:
         import pyRippleViewer.profiling.profiling as prf
         from datetime import datetime as dt

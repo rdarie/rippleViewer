@@ -34,18 +34,18 @@ dev = pq.XipppyBuffer(
 server['nip0'] = dev
 
 requestedChannels = {
-    # 'hi-res': [2, 3, 8],
+    'hi-res': [],
     # 'hifreq': [2, 3, 12]
     }
 
 dev.configure(
-    sample_interval_sec=200e-3, sample_chunksize_sec=100e-3,
-    buffer_padding_sec=5.,
+    sample_interval_sec=100e-3, sample_chunksize_sec=100e-3,
+    buffer_padding_sec=500e-3,
     channels=requestedChannels, verbose=False, debugging=False)
 for signalType in pq.ripple_signal_types:
     dev.outputs[signalType].configure(
-        # protocol='tcp', transfermode='sharedmem', double=True
-        protocol='tcp', interface='127.0.0.1', transfermode='plaindata'
+        # protocol='tcp', interface='127.0.0.1', transfermode='sharedmem', double=True
+        protocol='tcp', interface='127.0.0.1', transfermode='plaindata', double=True
         )
 dev.initialize()
 dev.start()

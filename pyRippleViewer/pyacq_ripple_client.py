@@ -38,8 +38,8 @@ showScope = False
 showTFR = False
 showEphyTraceViewer = True
 showEphyFrequencyViewer = True
-showEphyAnnotator = True
-signalTypesToPlot = ['hifreq', 'hi-res']
+showEphyAnnotator = False
+signalTypesToPlot = ['hifreq']
 
 # Start Qt application
 app = pg.mkQApp()
@@ -114,7 +114,7 @@ if showEphyTraceViewer:
     for idx, signalTypeToPlot in enumerate(signalTypesToPlot):
         ephy_scope = pq.TraceViewerNode(
             name='traceviewer_{}'.format(signalTypeToPlot),
-            controlsParentViewer=(idx == 0))
+            useOpenGL=True, controls_parent=(idx == 0))
         #
         ephy_scope.configure(
             with_user_dialog=True, max_xsize=120.)
@@ -127,8 +127,10 @@ if showEphyTraceViewer:
 ephy_tfr_list = []
 if showEphyFrequencyViewer and showEphyTraceViewer:
     for idx, signalTypeToPlot in enumerate(signalTypesToPlot):
+        # TimeFreqViewer
         ephy_tfr = ephyviewer.TimeFreqViewer(
             source=ephy_scope_list[idx].source,
+            useOpenGL=True,
             name='timefreq_{}'.format(signalTypeToPlot))
         ephy_tfr.show()
         ephy_tfr_list.append(ephy_tfr)
