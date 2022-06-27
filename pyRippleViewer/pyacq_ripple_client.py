@@ -34,6 +34,7 @@ if not re.match(r'tcp://(\*|([0-9\.]+)):(\*|[0-9]+)', rpc_addr):
     sys.stderr.write(usage)
     sys.exit(-1)
 
+showEphySpikes = True
 showScope = False
 showTFR = False
 showEphyTraceViewer = True
@@ -50,12 +51,6 @@ client = pq.RPCClient.get_client(rpc_addr)
 # Get a proxy to published object; use this (almost) exactly as you
 # would a local object:
 dev = client['nip0']
-
-# Create a monitor node
-mon = pq.StreamMonitor()
-mon.configure()
-mon.input.connect(dev.outputs['stim'])
-mon.initialize()
 
 if showScope:
     # Create a remote oscilloscope node to view the Ripple stream
@@ -137,6 +132,17 @@ if showEphyFrequencyViewer and showEphyTraceViewer:
 else:
     ephy_tfr = None
 
+
+# Create a monitor node
+mon = pq.StreamMonitor()
+mon.configure()
+mon.input.connect(dev.outputs['stim'])
+mon.initialize()
+if showEphySpikes:
+    stimSpikeSource = pq.InputStreamEventAndEpochSource(mon.input)
+    ephy_spk_viewer = ephyviewer.SpikeTrainViewer(
+        name='stim_spikes', source=stimSpikeSource)
+
 if showEphyAnnotator:
     epochAnnotatorSource = neurotic.NeuroticWritableEpochSource(
         filename='./test_annotations.csv', possible_labels=['label1', 'another_label'],
@@ -169,6 +175,8 @@ for ephy_view in ephy_tfr_list:
 if showEphyAnnotator:
     ephyWin.add_view(epochAnnotator)
 
+if showEphySpikes:
+    ephyWin.add_view(ephy_spk_viewer)
 
 # start nodes
 for node in [osc, tfr, mon] + ephy_scope_list:

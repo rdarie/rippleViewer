@@ -1,4 +1,4 @@
 
 runProfiler = False
 import pyqtgraph
-pyqtgraph.setConfigOptions(useOpenGL=True)
+pyqtgraph.setConfigOptions(useOpenGL=True, useNumba=True)

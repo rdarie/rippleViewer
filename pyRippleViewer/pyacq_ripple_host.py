@@ -30,16 +30,17 @@ print("Running server at: %s" % server.address.decode())
 
 # Create a xipppy buffer node
 dev = pq.XipppyBuffer(
-    name='nip0', dummy=False)
+    name='nip0', dummy=True)
 server['nip0'] = dev
 
 requestedChannels = {
     'hi-res': [],
-    # 'hifreq': [2, 3, 12]
+    # 'hifreq': [2, 3, 12],
+    # 'stim': [chIdx for chIdx in range(0, 32, 3)],
     }
 
 dev.configure(
-    sample_interval_sec=100e-3, sample_chunksize_sec=100e-3,
+    sample_interval_sec=100e-3, sample_chunksize_sec=50e-3,
     buffer_padding_sec=500e-3,
     channels=requestedChannels, verbose=False, debugging=False)
 for signalType in pq.ripple_signal_types:
