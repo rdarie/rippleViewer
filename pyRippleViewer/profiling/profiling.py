@@ -266,15 +266,18 @@ def processYappiResults(
     #
     threads = yappi.get_thread_stats()
     for thread in threads:
-        yStatsThisThread = yappi.get_func_stats(ctx_id=thread.id)
-        threadName = thread.name.replace('/', '').replace("\\", '')
-        # visualize .pstat results with snakeviz
-        # https://jiffyclub.github.io/snakeviz/
-        yStatsThisThread.save(profilerResultsPath + '_thread_{}_{}.pstat'.format(
-            thread.id, threadName), type='pstat')
-        # visualize .callgrind results with kcachegrindwin on linux
-        # Or, on windows, qcachegrindwin, available precompiled at
-        # https://sourceforge.net/projects/qcachegrindwin/
-        yStatsThisThread.save(profilerResultsPath + '_thread_{}_{}.callgrind'.format(
-            thread.id, threadName), type='callgrind')
+        try:
+            yStatsThisThread = yappi.get_func_stats(ctx_id=thread.id)
+            threadName = thread.name.replace('/', '').replace("\\", '')
+            # visualize .pstat results with snakeviz
+            # https://jiffyclub.github.io/snakeviz/
+            yStatsThisThread.save(profilerResultsPath + '_thread_{}_{}.pstat'.format(
+                thread.id, threadName), type='pstat')
+            # visualize .callgrind results with kcachegrindwin on linux
+            # Or, on windows, qcachegrindwin, available precompiled at
+            # https://sourceforge.net/projects/qcachegrindwin/
+            yStatsThisThread.save(profilerResultsPath + '_thread_{}_{}.callgrind'.format(
+                thread.id, threadName), type='callgrind')
+        except:
+            continue
             

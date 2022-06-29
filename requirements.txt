@@ -1,8 +1,9 @@
 python==3.8.5
 pip
 numpy
-pyqt
-pyqtgraph==0.12.4
+pyside2
+pyopengl
+pyopengl-accelerate
 numba
 icc_rt
 numexpr
@@ -27,6 +28,14 @@ PyDrive2
 pyyaml
 tqdm
 toml
+# for tridesclous
+hdbscan
+joblib
+loky
+openpyxl
+scikit-learn==1.1.1
+scikit-learn-intelex
+seaborn
 # for pandas html output
 jinja2
 # for profiling
@@ -35,3 +44,7 @@ psutil
 yappi
 snakeviz
 dill
+# for hdbscan
+cython
+# for dall4py
+daal

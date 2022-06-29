@@ -34,7 +34,7 @@ if not re.match(r'tcp://(\*|([0-9\.]+)):(\*|[0-9]+)', rpc_addr):
     sys.stderr.write(usage)
     sys.exit(-1)
 
-showEphySpikes = True
+showEphySpikes = False
 showScope = False
 showTFR = False
 showEphyTraceViewer = True

@@ -3,22 +3,25 @@
 # activate conda
 source ~/.bashrc
 conda config --add channels conda-forge
-conda config --add channels intel
 #
 export PYTHONPATH="${HOME}/.conda/envs/rippleViewer/Lib/site-packages"
 echo $PYTHONPATH
 # remove env if exists
-# conda remove -n rippleViewer --all --yes
+# conda remove -n rippleViewer --all --yes # TODO: fails with develop installed packages
 rm -rf "${HOME}/.conda/envs/rippleViewer"
+# clean cached installers from conda
+# conda clean --all --yes
 #
 # create environment
 conda create -n rippleViewer --file requirements.txt --yes
+
+conda activate rippleViewer
+echo "python version: "$(python --version)
 
 echo "Please check if installation was successful. If not, abort by pressing Ctrl-C"
 echo "Otherwise, continue by pressing any other key."
 read FILLER
 
-conda activate rippleViewer
 
 WHEEL_PREREQS=(\
 )
@@ -37,20 +40,25 @@ GitRepoRoot="https://github.com/rdarie/"
 GitFolder="${HOME}/Documents/GitHub"
 
 RepoList=(\
+"pyqtgraph" \
 "ephyviewer" \
 "pyacq" \
-"neurotic"
+"neurotic" \
+"tridesclous"
 )
 
 RepoOptsList=(\
+"" \
 " -b rippleViewer" \
 "" \
 "" \
+" -b rippleViewer" \
 )
 
-cloneRepos="False"
+cloneRepos=false
 
-if $cloneRepos = "True"; then
+if [$cloneRepos -eq true]
+then
     # make directory for cloned repos
     ENVDIR="${HOME}/rippleViewerEnv"
     rm -rf $ENVDIR
@@ -70,9 +78,10 @@ if $cloneRepos = "True"; then
         #
         echo "Installing "$GitRepoRoot$repoName
         # enter this repo
-        cd $repoName
-        pwd
-        python setup.py develop --install-dir=$PYTHONPATH --no-deps
+        # cd $repoName
+        # pwd
+        # python setup.py develop --install-dir=$PYTHONPATH --no-deps
+        pip install --no-warn-conflicts --no-build-isolation --no-deps --editable "${GitFolder}/${repoName}"
         cd $ENVDIR
     done
 else
@@ -80,17 +89,16 @@ else
     for i in ${!RepoList[@]}; do
         echo $i
         repoName=${RepoList[i]}
-        echo "Installing: ${repoName}"
+        echo "Installing: ${GitFolder}/${repoName}"
         #
-        # enter this repo
-        cd "${GitFolder}/${repoName}"
-        python setup.py develop --install-dir=$PYTHONPATH --no-deps
+        python -m pip install --no-warn-conflicts --no-build-isolation --no-deps --editable "${GitFolder}/${repoName}"
     done
 fi
 
 cd "${GitFolder}/rippleViewer"
 
-python setup.py develop --install-dir=$PYTHONPATH --no-deps
+# python setup.py develop --install-dir=$PYTHONPATH --no-deps
+python -m pip install --no-warn-conflicts --no-build-isolation --no-deps --editable .
 
 conda list --explicit > ./conda-spec-file.txt
 pip freeze > ./pip-spec-file.txt

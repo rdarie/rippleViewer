@@ -1,8 +1,6 @@
-import os, sys, re, socket
-
-import pyacq as pq
-import pyqtgraph as pg
 from pyRippleViewer import runProfiler
+import os, sys, re, socket
+import pyacq as pq
 usage = """Usage:
     python pyacq_ripple_host.py [rpc_addr]
 
@@ -34,13 +32,13 @@ dev = pq.XipppyTxBuffer(
 server['nip0'] = dev
 
 requestedChannels = {
-    'hi-res': [],
+    # 'hi-res': [2, 3, 12],
     # 'hifreq': [2, 3, 12],
     # 'stim': [chIdx for chIdx in range(0, 32, 3)],
     }
 
 dev.configure(
-    sample_interval_sec=100e-3, sample_chunksize_sec=50e-3,
+    sample_interval_sec=100e-3, sample_chunksize_sec=100e-3,
     buffer_padding_sec=500e-3,
     channels=requestedChannels, verbose=False, debugging=False)
 for signalType in pq.ripple_signal_types:
