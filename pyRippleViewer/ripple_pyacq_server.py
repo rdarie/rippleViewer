@@ -19,7 +19,7 @@ showTFR = False
 signalTypeToPlot = 'hifreq'
 
 # Start Qt application
-app = QtGui.QApplication([])
+app = pg.mkQApp()
 
 # Create a manager to spawn worker process to record and process audio
 man = create_manager()
@@ -93,4 +93,4 @@ for node in [dev, osc, tfr]:
 if __name__ == '__main__':
     import sys
     if sys.flags.interactive == 0:
-        app.exec_()
+        pg.exec()

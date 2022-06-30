@@ -229,6 +229,19 @@ def processYappiResults(
     profilerResultsPath = os.path.join(
         folder, fileName)
     yStats = yappi.get_func_stats()
+    #
+    # pdb.set_trace()
+    yStats.save(profilerResultsPath + '.pstat', type="pstat")
+    callGrindResultsPath = os.path.join(folder, f'callgrind.{fileName}')
+    yStats.save(callGrindResultsPath, type="callgrind")
+    #
+    if len(modulesToPrint):
+        keepList = [os.path.dirname(mod.__path__[0]) for mod in modulesToPrint]
+        filter_fun = lambda x: any([(searchTerm in x.module) for searchTerm in keepList])
+        statsSelected = yappi.get_func_stats(filter_callback=filter_fun)
+        statsSelected.save(profilerResultsPath + '_selected.pstat', type="pstat")
+        callGrindResultsPath = os.path.join(folder, f'callgrind.{fileName}_selected')
+        statsSelected.save(callGrindResultsPath, type="callgrind")
     yStatsDict = {
             attrName: []
             for attrName in attributesToPrint
@@ -243,8 +256,8 @@ def processYappiResults(
     yStatsDF = pd.DataFrame(yStatsDict)
     yStatsDF.sort_values(['ctx_id', 'ttot'], ascending=[True, False], inplace=True)
     if len(modulesToPrint):
-        keepList = [os.path.dirname(mod.__path__[0]) for mod in modulesToPrint]
-        mask = pd.concat([yStatsDF['module'].apply(lambda x: modPath in x) for modPath in keepList], axis='columns').any(axis='columns')
+        mask = pd.concat([yStatsDF['module'].apply(
+            lambda x: modPath in x) for modPath in keepList], axis='columns').any(axis='columns')
         yStatsDF = yStatsDF.loc[mask, :]
     runCaption = "Run lasted {:g} sec. ({} time)".format(run_time, clockType)
     style = (
@@ -262,7 +275,6 @@ def processYappiResults(
     style.to_html(profilerResultsPath + '.html')
     with open(profilerResultsPath + '_run_metadata.pickle', 'wb') as handle:
         pickle.dump(metadata, handle)
-    yStats.save(profilerResultsPath + '.ystat', type="ystat")
     #
     threads = yappi.get_thread_stats()
     for thread in threads:
@@ -276,8 +288,16 @@ def processYappiResults(
             # visualize .callgrind results with kcachegrindwin on linux
             # Or, on windows, qcachegrindwin, available precompiled at
             # https://sourceforge.net/projects/qcachegrindwin/
-            yStatsThisThread.save(profilerResultsPath + '_thread_{}_{}.callgrind'.format(
-                thread.id, threadName), type='callgrind')
+            callGrindResultsThisThreadPath = os.path.join(
+                folder, f'callgrind.{fileName}_thread_{thread.id}_{threadName}')
+            yStatsThisThread.save(callGrindResultsThisThreadPath, type='callgrind')
+            if len(modulesToPrint):
+                statsSelected = yappi.get_func_stats(ctx_id=thread.id, filter_callback=filter_fun)
+                statsSelected.save(profilerResultsPath + '_thread_{}_{}_selected.pstat'.format(
+                    thread.id, threadName), type='pstat')
+                callGrindResultsThisThreadPath = os.path.join(
+                    folder, f'callgrind.{fileName}_thread_{thread.id}_{threadName}_selected')
+                statsSelected.save(callGrindResultsThisThreadPath, type="callgrind")
         except:
             continue
             

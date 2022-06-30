@@ -195,7 +195,7 @@ if __name__ == '__main__':
             start_time = time.perf_counter()
 
         ######################
-        app.exec_()
+        pg.exec()
         ######################
         
         if runProfiler:

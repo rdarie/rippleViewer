@@ -1,9 +1,8 @@
 python==3.8.5
 pip
 numpy
-pyside2
+pyqt
 pyopengl
-pyopengl-accelerate
 numba
 icc_rt
 numexpr

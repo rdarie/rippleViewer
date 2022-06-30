@@ -20,7 +20,7 @@ Cython @ file:///D:/bld/cython_1652809489822/work
 daal4py==2021.5.0
 decorator @ file:///home/conda/feedstock_root/build_artifacts/decorator_1641555617451/work
 dill @ file:///home/conda/feedstock_root/build_artifacts/dill_1653058582944/work
--e git+https://github.com/rdarie/ephyviewer.git@547d8d4ab9f7523152852cf63a4cb6be186d8f28#egg=ephyviewer
+-e git+https://github.com/rdarie/ephyviewer.git@8e8d837e664fd6374ed8ce80c896d9e7daab906a#egg=ephyviewer
 et-xmlfile==1.0.1
 executing @ file:///home/conda/feedstock_root/build_artifacts/executing_1646044401614/work
 fonttools @ file:///D:/bld/fonttools_1651018082455/work
@@ -29,7 +29,7 @@ frozenlist @ file:///D:/bld/frozenlist_1648771831307/work
 fsspec @ file:///home/conda/feedstock_root/build_artifacts/fsspec_1653010523205/work
 funcy @ file:///home/conda/feedstock_root/build_artifacts/funcy_1640095670534/work
 google-api-core @ file:///home/conda/feedstock_root/build_artifacts/google-api-core-split_1655668757136/work
-google-api-python-client @ file:///home/conda/feedstock_root/build_artifacts/google-api-python-client_1655223713806/work
+google-api-python-client @ file:///home/conda/feedstock_root/build_artifacts/google-api-python-client_1656502211847/work
 google-auth @ file:///home/conda/feedstock_root/build_artifacts/google-auth_1655273470589/work
 google-auth-httplib2 @ file:///home/conda/feedstock_root/build_artifacts/google-auth-httplib2_1654134467987/work
 googleapis-common-protos @ file:///D:/bld/googleapis-common-protos-feedstock_1655853067467/work
@@ -72,7 +72,7 @@ prompt-toolkit @ file:///home/conda/feedstock_root/build_artifacts/prompt-toolki
 protobuf @ file:///D:/bld/protobuf_1652191791719/work/python
 psutil @ file:///D:/bld/psutil_1653089356250/work
 pure-eval @ file:///home/conda/feedstock_root/build_artifacts/pure_eval_1642875951954/work
--e git+https://github.com/rdarie/pyacq.git@0932a5bc5bf7164120d40f57cd7c9c9650090c3f#egg=pyacq
+-e git+https://github.com/rdarie/pyacq.git@27d48bed094119dc1bd10840f82ce66ae2797f12#egg=pyacq
 pyasn1==0.4.8
 pyasn1-modules==0.2.7
 PyAudio==0.2.11
@@ -81,15 +81,17 @@ PyDrive2 @ file:///home/conda/feedstock_root/build_artifacts/pydrive2_1650347012
 Pygments @ file:///home/conda/feedstock_root/build_artifacts/pygments_1650904496387/work
 pyopencl==2022.1.6
 PyOpenGL @ file:///home/conda/feedstock_root/build_artifacts/pyopengl_1652285526610/work
-PyOpenGL-accelerate==3.1.3b1
+PyOpenGL-accelerate==3.1.6
 pyOpenSSL @ file:///home/conda/feedstock_root/build_artifacts/pyopenssl_1643496850550/work
 pyparsing @ file:///home/conda/feedstock_root/build_artifacts/pyparsing_1652235407899/work
 PyQt5==5.15.4
 PyQt5-sip @ file:///D:/bld/pyqt-split_1654255768807/work/pyqt_sip
--e git+https://github.com/rdarie/pyqtgraph.git@ccc5505b4bbd75f5e8592e6af4aefdf7a9116084#egg=pyqtgraph
--e git+https://github.com/rdarie/rippleViewer.git@62f98ec212f095d15c7ca6d883b833d611932c18#egg=pyRippleViewer
+PyQt6==6.3.1
+PyQt6-Qt6==6.3.1
+PyQt6-sip==13.4.0
+-e git+https://github.com/rdarie/pyqtgraph.git@d1a614a3f5f1607409dc134ff9dc76a6d309236c#egg=pyqtgraph
+-e git+https://github.com/rdarie/rippleViewer.git@fc63a1c319e5ef8716cd0587f3df29f2a7493f99#egg=pyRippleViewer
 pyserial @ file:///home/conda/feedstock_root/build_artifacts/pyserial_1606128640882/work
-PySide2==5.15.5
 PySocks @ file:///D:/bld/pysocks_1648857453381/work
 python-dateutil @ file:///home/conda/feedstock_root/build_artifacts/python-dateutil_1626286286081/work
 pytools @ file:///home/conda/feedstock_root/build_artifacts/pytools_1656247651513/work
@@ -104,7 +106,6 @@ scikit-learn @ file:///D:/bld/scikit-learn_1652976994170/work
 scikit-learn-intelex==2021.20220207.124103
 scipy @ file:///C:/bld/scipy_1653074070936/work
 seaborn @ file:///home/conda/feedstock_root/build_artifacts/seaborn-split_1629095986539/work
-shiboken2==5.15.5
 sip @ file:///D:/bld/sip_1646101435979/work
 six @ file:///home/conda/feedstock_root/build_artifacts/six_1620240208055/work
 snakeviz @ file:///home/conda/feedstock_root/build_artifacts/snakeviz_1635798119184/work

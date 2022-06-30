@@ -48,4 +48,4 @@ if __name__ == '__main__':
         osc.start()
         dev.start()
 
-        app.exec_()
+        pg.exec()

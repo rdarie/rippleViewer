@@ -185,7 +185,7 @@ def wrapper():
 
     if __name__ == '__main__':
         if sys.flags.interactive == 0:
-            app.exec_()
+            pg.exec()
 
 if __name__ == '__main__':
     if runProfiler:

@@ -188,4 +188,4 @@ for node in [dev, osc, tfr] + ephy_scope_list:
 
 if __name__ == '__main__':
     if sys.flags.interactive == 0:
-        app.exec_()
+        pg.exec()

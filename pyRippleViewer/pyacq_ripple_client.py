@@ -201,7 +201,7 @@ if __name__ == '__main__':
             yappi.start()
             start_time = time.perf_counter()
         ######################
-        app.exec_()
+        pg.exec()
         ######################
         if runProfiler:
             yappi.stop()

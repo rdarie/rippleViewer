@@ -1,0 +1,3 @@
+
+runProfiler = True
+LOGGING = True

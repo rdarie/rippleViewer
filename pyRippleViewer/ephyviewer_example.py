@@ -14,4 +14,4 @@ win = ephyviewer.MainViewer(debug=True, show_auto_scale=True, show_play=False)
 win.add_view(view1)
 win.show()
 
-app.exec_()
+pg.exec()

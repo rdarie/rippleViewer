@@ -175,4 +175,4 @@ if __name__ == '__main__':
     propsPresent.style.applymap(color_boolean).to_html('viewer_props.html')
 
     if sys.flags.interactive == 0:
-        app.exec_()
+        pg.exec()

@@ -56,4 +56,4 @@ tfr.start()
 if __name__ == '__main__':
     import sys
     if sys.flags.interactive == 0:
-        app.exec_()
+        pg.exec()
