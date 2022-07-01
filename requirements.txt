@@ -3,7 +3,7 @@ pip
 ipykernel
 numpy
 pyqt
-pyopengl
+pyopengl==3.1.5
 numba
 icc_rt
 numexpr
@@ -46,3 +46,4 @@ snakeviz
 dill
 # for hdbscan
 cython
+daal

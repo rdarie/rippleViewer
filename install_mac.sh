@@ -1,14 +1,15 @@
 #!/bin/bash
 
 # activate conda
-source ~/.bashrc
+source ~/.bash_profile
 conda config --add channels conda-forge
+conda config --append channels intel
 #
-export PYTHONPATH="${HOME}/.conda/envs/rippleViewer/Lib/site-packages"
+export PYTHONPATH="${HOME}/opt/anaconda3/envs/rippleViewer/lib/python3.8/site-packages"
 echo $PYTHONPATH
 # remove env if exists
 # conda remove -n rippleViewer --all --yes # TODO: fails with develop installed packages
-rm -rf "${HOME}/.conda/envs/rippleViewer"
+rm -rf "${HOME}/opt/anaconda3/envs/rippleViewer"
 # clean cached installers from conda
 conda clean --all --yes
 #
@@ -23,7 +24,7 @@ echo "Otherwise, continue by pressing any other key."
 read FILLER
 
 WHEEL_PREREQS=(\
-"PyOpenGL-accelerate==3.1.6" \
+"PyOpenGL-accelerate==3.1.5" \
 "PySide6-Essentials==6.3.1" \
 "PySide6-Addons==6.3.1" \
 "shiboken6==6.3.1" \
@@ -84,10 +85,10 @@ then
         #
         echo "Installing "$GitRepoRoot$repoName
         # enter this repo
-        # cd $repoName
+        cd $repoName
         # pwd
-        # python setup.py develop --install-dir=$PYTHONPATH --no-deps
-        pip install --no-warn-conflicts --no-build-isolation --no-deps --editable "${GitFolder}/${repoName}"
+        python setup.py develop --install-dir=$PYTHONPATH --no-deps
+        # pip install --no-warn-conflicts --no-build-isolation --no-deps --editable "${GitFolder}/${repoName}"
         cd $ENVDIR
     done
 else
@@ -96,15 +97,18 @@ else
         echo $i
         repoName=${RepoList[i]}
         echo "Installing: ${GitFolder}/${repoName}"
-        #
-        python -m pip install --no-warn-conflicts --no-build-isolation --no-deps --editable "${GitFolder}/${repoName}"
+        cd "${GitFolder}/${repoName}"
+        pwd
+        # python -m pip install --no-warn-conflicts --no-build-isolation --no-deps --editable "${GitFolder}/${repoName}"
+        python setup.py --develop --no-build-isolation --no-deps --install-dir=$PYTHONPATH
+        cd "${GitFolder}"
     done
 fi
 
 cd "${GitFolder}/rippleViewer"
 
-# python setup.py develop --install-dir=$PYTHONPATH --no-deps
-python -m pip install --no-warn-conflicts --no-build-isolation --no-deps --editable .
+python setup.py develop --install-dir=$PYTHONPATH --no-deps
+# python -m pip install --no-warn-conflicts --no-build-isolation --no-deps --editable .
 
 echo "python version: "$(python --version)
 conda env config vars set PYQTGRAPH_QT_LIB=PySide6
