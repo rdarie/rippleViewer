@@ -1,5 +1,6 @@
 python==3.8.5
 pip
+ipykernel
 numpy
 pyqt
 pyopengl
@@ -45,5 +46,3 @@ snakeviz
 dill
 # for hdbscan
 cython
-# for dall4py
-daal

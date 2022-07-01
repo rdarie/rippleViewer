@@ -11,16 +11,18 @@ brotlipy @ file:///D:/bld/brotlipy_1648854320485/work
 cachetools @ file:///home/conda/feedstock_root/build_artifacts/cachetools_1640686991047/work
 certifi==2022.6.15
 cffi @ file:///D:/bld/cffi_1636046293990/work
-charset-normalizer @ file:///home/conda/feedstock_root/build_artifacts/charset-normalizer_1644853463426/work
+charset-normalizer @ file:///home/conda/feedstock_root/build_artifacts/charset-normalizer_1655906222726/work
 cloudpickle @ file:///home/conda/feedstock_root/build_artifacts/cloudpickle_1653061851209/work
 colorama @ file:///home/conda/feedstock_root/build_artifacts/colorama_1655412516417/work
 cryptography @ file:///D:/bld/cryptography_1652967249187/work
 cycler @ file:///home/conda/feedstock_root/build_artifacts/cycler_1635519461629/work
 Cython @ file:///D:/bld/cython_1652809489822/work
 daal4py==2021.5.0
+debugpy @ file:///D:/bld/debugpy_1649586564473/work
 decorator @ file:///home/conda/feedstock_root/build_artifacts/decorator_1641555617451/work
 dill @ file:///home/conda/feedstock_root/build_artifacts/dill_1653058582944/work
--e git+https://github.com/rdarie/ephyviewer.git@8e8d837e664fd6374ed8ce80c896d9e7daab906a#egg=ephyviewer
+entrypoints @ file:///home/conda/feedstock_root/build_artifacts/entrypoints_1643888246732/work
+-e git+https://github.com/rdarie/ephyviewer.git@fc5a0ff448ef940044eb7e615075792df32b9bcd#egg=ephyviewer
 et-xmlfile==1.0.1
 executing @ file:///home/conda/feedstock_root/build_artifacts/executing_1646044401614/work
 fonttools @ file:///D:/bld/fonttools_1651018082455/work
@@ -30,7 +32,7 @@ fsspec @ file:///home/conda/feedstock_root/build_artifacts/fsspec_1653010523205/
 funcy @ file:///home/conda/feedstock_root/build_artifacts/funcy_1640095670534/work
 google-api-core @ file:///home/conda/feedstock_root/build_artifacts/google-api-core-split_1655668757136/work
 google-api-python-client @ file:///home/conda/feedstock_root/build_artifacts/google-api-python-client_1656502211847/work
-google-auth @ file:///home/conda/feedstock_root/build_artifacts/google-auth_1655273470589/work
+google-auth @ file:///home/conda/feedstock_root/build_artifacts/google-auth_1656608248616/work
 google-auth-httplib2 @ file:///home/conda/feedstock_root/build_artifacts/google-auth-httplib2_1654134467987/work
 googleapis-common-protos @ file:///D:/bld/googleapis-common-protos-feedstock_1655853067467/work
 hdbscan @ file:///D:/bld/hdbscan_1644612923597/work
@@ -39,15 +41,18 @@ httplib2 @ file:///home/conda/feedstock_root/build_artifacts/httplib2_1644593570
 idna @ file:///home/conda/feedstock_root/build_artifacts/idna_1642433548627/work
 imageio @ file:///home/conda/feedstock_root/build_artifacts/imageio_1654071881944/work
 importlib-metadata @ file:///D:/bld/importlib-metadata_1653252985644/work
+ipykernel @ file:///D:/bld/ipykernel_1655369313836/work
 ipython @ file:///D:/bld/ipython_1653755022901/work
 jedi @ file:///D:/bld/jedi_1649067326950/work
 Jinja2 @ file:///home/conda/feedstock_root/build_artifacts/jinja2_1654302431367/work
 joblib @ file:///home/conda/feedstock_root/build_artifacts/joblib_1633637554808/work
+jupyter-client @ file:///home/conda/feedstock_root/build_artifacts/jupyter_client_1654730843242/work
+jupyter-core @ file:///D:/bld/jupyter_core_1652365473010/work
 kiwisolver @ file:///D:/bld/kiwisolver_1655141745440/work
 line-profiler @ file:///D:/bld/line_profiler_1647945087178/work
 llvmlite==0.38.1
 loky @ file:///home/conda/feedstock_root/build_artifacts/loky_1645539552264/work
-Mako @ file:///home/conda/feedstock_root/build_artifacts/mako_1649097013621/work
+Mako @ file:///home/conda/feedstock_root/build_artifacts/mako_1656619049246/work
 MarkupSafe @ file:///D:/bld/markupsafe_1648737751065/work
 matplotlib @ file:///D:/bld/matplotlib-suite_1651609674242/work
 matplotlib-inline @ file:///home/conda/feedstock_root/build_artifacts/matplotlib-inline_1631080358261/work
@@ -55,6 +60,7 @@ msgpack @ file:///D:/bld/msgpack-python_1654260798511/work
 multidict @ file:///D:/bld/multidict_1648882607760/work
 munkres==1.1.4
 neo @ file:///home/conda/feedstock_root/build_artifacts/python-neo_1632743000666/work
+nest-asyncio @ file:///home/conda/feedstock_root/build_artifacts/nest-asyncio_1648959695634/work
 -e git+https://github.com/rdarie/neurotic.git@2f1cba4c7df4f21e32d7c29f5d80c76662372f3b#egg=neurotic
 numba @ file:///D:/bld/numba_1655473440454/work
 numexpr @ file:///D:/bld/numexpr_1649636921408/work
@@ -72,7 +78,7 @@ prompt-toolkit @ file:///home/conda/feedstock_root/build_artifacts/prompt-toolki
 protobuf @ file:///D:/bld/protobuf_1652191791719/work/python
 psutil @ file:///D:/bld/psutil_1653089356250/work
 pure-eval @ file:///home/conda/feedstock_root/build_artifacts/pure_eval_1642875951954/work
--e git+https://github.com/rdarie/pyacq.git@27d48bed094119dc1bd10840f82ce66ae2797f12#egg=pyacq
+-e git+https://github.com/rdarie/pyacq.git@28f61cc49bb3a3e8ea94c5704e3122a8c041f67f#egg=pyacq
 pyasn1==0.4.8
 pyasn1-modules==0.2.7
 PyAudio==0.2.11
@@ -86,26 +92,27 @@ pyOpenSSL @ file:///home/conda/feedstock_root/build_artifacts/pyopenssl_16434968
 pyparsing @ file:///home/conda/feedstock_root/build_artifacts/pyparsing_1652235407899/work
 PyQt5==5.15.4
 PyQt5-sip @ file:///D:/bld/pyqt-split_1654255768807/work/pyqt_sip
-PyQt6==6.3.1
-PyQt6-Qt6==6.3.1
-PyQt6-sip==13.4.0
--e git+https://github.com/rdarie/pyqtgraph.git@d1a614a3f5f1607409dc134ff9dc76a6d309236c#egg=pyqtgraph
--e git+https://github.com/rdarie/rippleViewer.git@fc63a1c319e5ef8716cd0587f3df29f2a7493f99#egg=pyRippleViewer
+-e git+https://github.com/rdarie/pyqtgraph.git@a0496c86bb7937f077db2c9fd6e5ee449a3fc401#egg=pyqtgraph
+-e git+https://github.com/rdarie/rippleViewer.git@6e0c7993b0c8b154686bd8d4345ba06a53e2ef2b#egg=pyRippleViewer
 pyserial @ file:///home/conda/feedstock_root/build_artifacts/pyserial_1606128640882/work
+PySide6-Addons==6.3.1
+PySide6-Essentials==6.3.1
 PySocks @ file:///D:/bld/pysocks_1648857453381/work
 python-dateutil @ file:///home/conda/feedstock_root/build_artifacts/python-dateutil_1626286286081/work
 pytools @ file:///home/conda/feedstock_root/build_artifacts/pytools_1656247651513/work
 pytz @ file:///home/conda/feedstock_root/build_artifacts/pytz_1647961439546/work
 pyu2f @ file:///home/conda/feedstock_root/build_artifacts/pyu2f_1604248910016/work
+pywin32==303
 PyYAML @ file:///D:/bld/pyyaml_1648757284286/work
 pyzmq @ file:///D:/bld/pyzmq_1656183679173/work
 quantities @ file:///home/conda/feedstock_root/build_artifacts/quantities_1642537038651/work
-requests @ file:///home/conda/feedstock_root/build_artifacts/requests_1656243196385/work
+requests @ file:///home/conda/feedstock_root/build_artifacts/requests_1656534056640/work
 rsa @ file:///home/conda/feedstock_root/build_artifacts/rsa_1637781155505/work
 scikit-learn @ file:///D:/bld/scikit-learn_1652976994170/work
 scikit-learn-intelex==2021.20220207.124103
 scipy @ file:///C:/bld/scipy_1653074070936/work
 seaborn @ file:///home/conda/feedstock_root/build_artifacts/seaborn-split_1629095986539/work
+shiboken6==6.3.1
 sip @ file:///D:/bld/sip_1646101435979/work
 six @ file:///home/conda/feedstock_root/build_artifacts/six_1620240208055/work
 snakeviz @ file:///home/conda/feedstock_root/build_artifacts/snakeviz_1635798119184/work

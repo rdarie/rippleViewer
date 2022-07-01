@@ -78,33 +78,34 @@ def main():
         print('Closing server...')
         server.close()
 
-
-if runProfiler:
-    dateStr = now.strftime('%Y%m%d')
-    timeStr = now.strftime('%H%M')
-    profilerResultsFileName = '{}_{}_pid_{}'.format(
-        __file__.split('.')[0], timeStr, os.getpid())
-    profilerResultsFolder = '../yappi_profiler_outputs/{}'.format(dateStr)
-    ##
-    yappiClockType = 'cpu'
-    yappi.set_clock_type(yappiClockType) # Use set_clock_type("wall") for wall time
-    yappi.start()
-    start_time = time.perf_counter()
-
-try:
-    main()
-finally:
+if __name__ == '__main__':
     if runProfiler:
-        print('Saving yappi profiler outputs')
-        yappi.stop()
-        stop_time = time.perf_counter()
-        run_time = stop_time - start_time
-        ###
-        minimum_time = 1e-1
-        modulesToPrint = [pq, ephy, pg]  # [pq, ephy, pg]
-        runMetadata = {}
-        from pyRippleViewer.profiling import profiling as prf   
-        prf.processYappiResults(
-            fileName=profilerResultsFileName, folder=profilerResultsFolder,
-            minimum_time=minimum_time, modulesToPrint=modulesToPrint,
-            run_time=run_time, metadata=runMetadata)
+        dateStr = now.strftime('%Y%m%d')
+        timeStr = now.strftime('%H%M')
+        profilerResultsFileName = '{}_{}_pid_{}'.format(
+            __file__.split('.')[0], timeStr, os.getpid())
+        profilerResultsFolder = '../yappi_profiler_outputs/{}'.format(dateStr)
+        ##
+        yappiClockType = 'cpu'
+        yappi.set_clock_type(yappiClockType) # Use set_clock_type("wall") for wall time
+        yappi.start()
+        start_time = time.perf_counter()
+    try:
+        ###############
+        main()
+        ###############
+    finally:
+        if runProfiler:
+            print('Saving yappi profiler outputs')
+            yappi.stop()
+            stop_time = time.perf_counter()
+            run_time = stop_time - start_time
+            ###
+            minimum_time = 1e-1
+            modulesToPrint = [pq, ephy, pg]  # [pq, ephy, pg]
+            runMetadata = {}
+            from pyRippleViewer.profiling import profiling as prf   
+            prf.processYappiResults(
+                fileName=profilerResultsFileName, folder=profilerResultsFolder,
+                minimum_time=minimum_time, modulesToPrint=modulesToPrint,
+                run_time=run_time, metadata=runMetadata)
