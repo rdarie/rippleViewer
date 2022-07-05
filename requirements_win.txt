@@ -1,12 +1,13 @@
 python==3.8.5
 pip
-numpy
+numpy>=1.22
 scipy
 mkl
 mkl_fft
 numba
 icc_rt
 blosc
+pyqt
 cython
 fastcore
 ipykernel
