@@ -80,7 +80,7 @@ def wrapper():
     channel_group = {
         'channels': [idx for idx, item in enumerate(channel_info)],
         'geometry': [[0, 100 * idx] for idx, item in enumerate(channel_info)]
-    }
+        }
     triggerAcc = pq.RippleTriggerAccumulator()
     triggerAcc.configure(channel_group=channel_group)
     
