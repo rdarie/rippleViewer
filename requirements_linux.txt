@@ -5,9 +5,6 @@ numpy
 pyqt
 pyopengl==3.1.5
 numba
-icc_rt
-mkl
-numexpr
 pyzmq
 blosc
 msgpack-python
@@ -35,7 +32,6 @@ joblib
 loky
 openpyxl
 scikit-learn==1.1.1
-scikit-learn-intelex
 seaborn
 # for pandas html output
 jinja2
@@ -43,10 +39,7 @@ jinja2
 line_profiler
 psutil
 yappi
-snakeviz
 dill
 # for hdbscan
 cython
-daal4py
-fastcore
 pytest

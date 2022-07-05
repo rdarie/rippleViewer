@@ -3,6 +3,7 @@
 # activate conda
 source ~/.bashrc
 conda config --add channels conda-forge
+conda config --add channels intel
 #
 export PYTHONPATH="${HOME}/.conda/envs/rippleViewer/Lib/site-packages"
 echo $PYTHONPATH
@@ -37,7 +38,7 @@ for PREREQ in ${WHEEL_PREREQS[*]}; do
     pip install "${PREREQ}" --no-deps --upgrade
 done
 
-for FILE in ./wheels/*.whl; do
+for FILE in ./external_wheels/*.whl; do
     echo "Installing ${FILE}"
     pip install "${FILE}" --no-deps --upgrade
 done
@@ -63,7 +64,7 @@ RepoOptsList=(\
 
 cloneRepos=false
 
-if [[ $cloneRepos -eq true ]];
+if [[ $cloneRepos = true ]]
 then
     # make directory for cloned repos
     ENVDIR="${HOME}/rippleViewerEnv"

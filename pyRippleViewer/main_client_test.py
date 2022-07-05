@@ -9,20 +9,28 @@ values.
 
 """
 import yappi
-from profiling_opts import runProfiler, LOGGING
+from profiling_opts import runProfiler, LOGGING, logFormatDict
 
 from datetime import datetime as dt
-import os
+import os, pdb
 import logging
 import time
+from pathlib import Path
 
 now = dt.now()
 
 if LOGGING:
+    pathHere = Path(__file__)
+    thisFileName = pathHere.stem
+    logFileDir = pathHere.resolve().parent.parent
+    logFileName = os.path.join(
+        logFileDir, 'logs',
+        f"{thisFileName}_{now.strftime('%Y_%m_%d_%M%S')}.log"
+        )
     logging.basicConfig(
-        filename='..\logs\{}_{}.log'.format(
-            os.path.splitext(os.path.basename(__file__))[0].replace('__', ''), now.strftime('%Y%m%d%H%M')),
-        level=logging.INFO)
+        filename=logFileName,
+        **logFormatDict
+        )
     logger = logging.getLogger(__name__)
 
 import pyRippleViewer
@@ -53,14 +61,14 @@ if not re.match(r'tcp://(\*|([0-9\.]+)):(\*|[0-9]+)', rpc_addr):
 
 def main():
     try:
-        showSpikes = True
+        # Start Qt application
+        app = pg.mkQApp()
+        #
+        showSpikes = False
         showScope = True
         showTFR = True
         showAnnotator = False
         signalTypesToPlot = ['hifreq'] # ['hi-res', 'hifreq', 'stim']
-
-        # Start Qt application
-        app = pg.mkQApp()
 
         # In host/process/thread 2: (you must communicate rpc_addr manually)
         client = pq.RPCClient.get_client(rpc_addr)
@@ -70,12 +78,17 @@ def main():
         txBuffer = client['nip0']
 
         rxBuffer = pq.XipppyRxBuffer(
-            name='nip_rx0', max_xsize=24.,
+            name='nip_rx0',
             requested_signal_types=signalTypesToPlot
             )
         rxBuffer.configure()
         for signalType in signalTypesToPlot:
             rxBuffer.inputs[signalType].connect(txBuffer.outputs[signalType])
+        for signalType in pq.ripple_signal_types:
+            rxBuffer.outputs[signalType].configure(
+                protocol='tcp', interface='127.0.0.1', transfermode='sharedmem', double=True
+                # protocol='tcp', interface='127.0.0.1', transfermode='plaindata', double=True
+                )
         rxBuffer.initialize()
         rxBuffer.start()
 
@@ -101,7 +114,7 @@ def main():
             if showTFR:
                 tfrview = ephy.TimeFreqViewer(
                     source=sig_source,
-                    scaleogram_type='wavelet',
+                    scaleogram_type='spectrogram',
                     name='timefreq_{}'.format(signalType))
             if firstSource:
                 ephyWin.set_time_reference_source(sig_source)

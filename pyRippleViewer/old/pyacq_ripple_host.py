@@ -41,7 +41,7 @@ requestedChannels = {
 
 dev.configure(
     sample_interval_sec=100e-3, sample_chunksize_sec=50e-3,
-    buffer_padding_sec=500e-3,
+    buffer_size_sec=500e-3,
     channels=requestedChannels, verbose=False, debugging=False)
 for signalType in pq.ripple_signal_types:
     dev.outputs[signalType].configure(

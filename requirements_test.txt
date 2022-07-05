@@ -1,0 +1,6 @@
+python==3.8.5
+numba
+icc_rt
+scipy
+mkl
+mkl_fft

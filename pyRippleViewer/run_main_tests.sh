@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # activate conda
-source ~/.bashrc
+. "${HOME}/opt/anaconda3/etc/profile.d/conda.sh"
+conda activate rippleViewer
 
 python main_host_test.py &
 

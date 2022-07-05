@@ -1,0 +1,52 @@
+name: rippleViewer
+channels:
+  - defaults
+  - conda-forge
+  - intel
+dependencies:
+  - matplotlib
+  - pytest
+  - pyopengl==3.1.5
+  - pyaudio
+  - yappi
+  - numpy
+  - numba
+  - pyzmq
+  - av
+  - imageio
+  - python-neo[version='>=0.9']
+  - pyyaml
+  - daal4py
+  - pandas
+  - pyserial
+  - scikit-learn-intelex
+  - scipy
+  - loky
+  - mkl
+  - python==3.8.5
+  - seaborn
+  - cython
+  - pip
+  - dill
+  - fastcore
+  - pydrive2
+  - tqdm
+  - toml
+  - psutil
+  - icc_rt
+  - line_profiler
+  - ipykernel
+  - decorator==5.1.1
+  - joblib
+  - scikit-learn
+  - pyopencl
+  - mkl_fft
+  - jinja2
+  - hdbscan
+  - blosc
+  - msgpack-python
+  - openpyxl
+  - vispy[version='>=0.9']
+variables:
+  PYQTGRAPH_QT_LIB: PySide6
+prefix: /Users/radudarie/opt/anaconda3/envs/rippleViewer

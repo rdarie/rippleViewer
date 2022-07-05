@@ -1,13 +1,16 @@
 python==3.8.5
 pip
-ipykernel
-numpy
-pyqt
-pyopengl==3.1.5
+mkl
+mkl_fft
 numba
 icc_rt
-mkl
-numexpr
+blosc
+numpy
+scipy
+cython
+fastcore
+ipykernel
+pyopengl==3.1.5
 pyzmq
 blosc
 msgpack-python
@@ -17,7 +20,6 @@ pyserial
 # for video
 av
 imageio
-scipy
 pyopencl
 decorator==5.1.1
 # for ephyviewer
@@ -34,7 +36,7 @@ hdbscan
 joblib
 loky
 openpyxl
-scikit-learn==1.1.1
+scikit-learn
 scikit-learn-intelex
 seaborn
 # for pandas html output
@@ -43,10 +45,7 @@ jinja2
 line_profiler
 psutil
 yappi
-snakeviz
 dill
 # for hdbscan
-cython
 daal4py
-fastcore
 pytest

@@ -1,18 +1,27 @@
 import yappi
-from profiling_opts import runProfiler, LOGGING
+from profiling_opts import runProfiler, LOGGING, logFormatDict
 
 from datetime import datetime as dt
 import os
 import logging
 import time
+import pdb
+from pathlib import Path
 
 now = dt.now()
 
 if LOGGING:
+    pathHere = Path(__file__)
+    thisFileName = pathHere.stem
+    logFileDir = pathHere.resolve().parent.parent
+    logFileName = os.path.join(
+        logFileDir, 'logs',
+        f"{thisFileName}_{now.strftime('%Y_%m_%d_%M%S')}.log"
+        )
     logging.basicConfig(
-        filename='..\logs\{}_{}.log'.format(
-            os.path.splitext(os.path.basename(__file__))[0].replace('__', ''), now.strftime('%Y%m%d%H%M')),
-        level=logging.INFO)
+        filename=logFileName,
+        **logFormatDict
+        )
     logger = logging.getLogger(__name__)
 
 import pyRippleViewer
@@ -55,15 +64,16 @@ def main():
         server['nip0'] = dev
 
         requestedChannels = {
-            # 'hi-res': [2, 3, 12],
+            # 'hi-res': [],
             # 'hifreq': [2, 3, 12],
             # 'stim': [chIdx for chIdx in range(0, 32, 3)],
             }
 
         dev.configure(
-            sample_interval_sec=100e-3, sample_chunksize_sec=100e-3,
-            buffer_padding_sec=500e-3,
+            sample_interval_sec=50e-3, sample_chunksize_sec=50e-3,
+            buffer_size_sec=5.,
             channels=requestedChannels, verbose=False, debugging=False)
+        print(f'dev.present_analogsignal_types = {dev.present_analogsignal_types}')
         for signalType in pq.ripple_signal_types:
             dev.outputs[signalType].configure(
                 # protocol='tcp', interface='127.0.0.1', transfermode='sharedmem', double=True

@@ -1,4 +1,3 @@
 #!/bin/bash
 
-cd docker
-docker build -t rdarie/rippleViewer -f Dockerfile .
+docker build -t rdarie/rippleviewer -f Dockerfile .

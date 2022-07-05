@@ -18,15 +18,11 @@ condaRoot = os.path.join('F:\\', 'Anaconda3')
 condaBinFolder = os.path.join(condaRoot, 'condabin')
 condaExec = os.path.join(condaBinFolder, 'conda.bat')
 print('Starting host process...')
-flags = (
-    subprocess.HIGH_PRIORITY_CLASS
-    )
+
 host_cmd = [
     f'{condaExec}', 'activate', 'rippleViewer', '&',
     'python', 'main_host_test.py']
-host_process = subprocess.Popen(
-    host_cmd, creationflags=flags
-    )
+host_process = subprocess.Popen(host_cmd)
 print(f'host pid = {host_process.pid}')
 print('Sleeping for 10 sec...')
 time.sleep(10.)
@@ -34,9 +30,7 @@ print('Starting client...')
 client_cmd = [
     f'{condaExec}', 'activate', 'rippleViewer', '&',
     'python', 'main_client_test.py']
-client_process = subprocess.Popen(
-    client_cmd, creationflags=flags
-    )
+client_process = subprocess.Popen(client_cmd)
 print(f'client pid = {client_process.pid}')
 sleepFor = 200
 print(f'Sleeping for {sleepFor} sec...')

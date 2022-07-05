@@ -9,7 +9,6 @@ import pdb
 import dill as pickle
 import yappi
 
-from PyQt5.QtCore import pyqtRemoveInputHook, pyqtRestoreInputHook
 from inspect import getmembers, isfunction, isclass
 
 psutil_process = psutil.Process(os.getpid())
@@ -202,16 +201,6 @@ def profileFunction(
             output_unit=outputUnits, stream=f, minimum_time=minimum_time)
     return
 
-def debugTrace():
-    pyqtRemoveInputHook()
-    try:
-        debugger = pdb.Pdb()
-        debugger.reset()
-        debugger.do_next(None)
-        user_frame = sys._getframe().f_back
-        debugger.interaction(user_frame, None)
-    finally:
-        pyqtRestoreInputHook()
 
 def processYappiResults(
         fileName=None, folder=None,

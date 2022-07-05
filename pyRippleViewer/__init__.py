@@ -5,9 +5,11 @@ if sys.platform == 'win32':
     winmm = ctypes.WinDLL('winmm')
     winmm.timeBeginPeriod(1)
 
+import PySide6
 import pyqtgraph
+
 # pyqtgraphOpts = dict(useOpenGL=True, enableExperimental=True, useNumba=True)
-pyqtgraphOpts = dict(useOpenGL=True, enableExperimental=True, useNumba=True)
+pyqtgraphOpts = dict()
 pyqtgraph.setConfigOptions(**pyqtgraphOpts)
 
 # don't limit frame rate to vsync
