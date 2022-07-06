@@ -9,7 +9,7 @@ import PySide6
 import pyqtgraph
 
 # pyqtgraphOpts = dict(useOpenGL=True, enableExperimental=True, useNumba=True)
-pyqtgraphOpts = dict(useOpenGL=True, enableExperimental=True, useNumba=True)
+pyqtgraphOpts = dict()
 pyqtgraph.setConfigOptions(**pyqtgraphOpts)
 
 # don't limit frame rate to vsync
