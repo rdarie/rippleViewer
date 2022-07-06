@@ -9,7 +9,7 @@ import PySide6
 import pyqtgraph
 
 # pyqtgraphOpts = dict(useOpenGL=True, enableExperimental=True, useNumba=True)
-pyqtgraphOpts = dict()
+pyqtgraphOpts = dict(useOpenGL=True, enableExperimental=True, useNumba=True)
 pyqtgraph.setConfigOptions(**pyqtgraphOpts)
 
 # don't limit frame rate to vsync
@@ -18,5 +18,4 @@ sfmt.setSwapInterval(0)
 pyqtgraph.Qt.QtGui.QSurfaceFormat.setDefaultFormat(sfmt)
 
 import ephyviewer
-
 import pyacq
