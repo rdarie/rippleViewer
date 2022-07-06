@@ -71,10 +71,10 @@ def wrapper():
             )
     txBuffer.initialize()
 
-    showSpikes = False
+    showSpikes = True
     showScope = True
     showTFR = False
-    signalTypesToPlot = ['hifreq'] # ['hi-res', 'hifreq', 'stim']
+    signalTypesToPlot = ['hifreq', 'stim'] # ['hi-res', 'hifreq', 'stim']
     rxBuffer = pq.XipppyRxBuffer(
         name='nip_rx0',
         requested_signal_types=signalTypesToPlot
@@ -102,7 +102,7 @@ def wrapper():
             continue
         sig_source = rxBuffer.sources[signalType]
         if showScope:
-            traceview = ephy.FastTraceViewer(
+            traceview = ephy.TraceViewer(
                 source=sig_source, name='signal_{}'.format(signalType))
             traceview.params['scale_mode'] = 'by_channel'
             traceview.params['display_labels'] = True
