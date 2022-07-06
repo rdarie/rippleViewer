@@ -2,34 +2,22 @@
 
 # activate conda
 export ANACONDA_ROOT='/C/Users/Radu/anaconda3'
-. "${ANACONDA_ROOT}/etc/profile.d/conda.sh"
-# eval "$('/C/Users/Radu/anaconda3/Scripts/conda.exe' 'shell.bash' 'hook')"
-conda activate
+eval "$('/C/Users/Radu/anaconda3/Scripts/conda.exe' 'shell.bash' 'hook')"
 
 conda config --set pip_interop_enabled True
 conda config --append channels conda-forge
 conda config --append channels intel
 
+conda activate rippleViewer
+
 export ENV_DIR="${ANACONDA_ROOT}/envs/rippleViewer"
 # export ENV_DIR="${HOME}/.conda/envs/rippleViewer"
 
-# remove env if exists
-# conda remove -n rippleViewer --all --yes # TODO: fails with develop installed packages
-rm -rf "${ENV_DIR}"
-
-# clean cached installers from conda
-conda clean --all --yes
-#
-# create environment
-echo "Creating conda environment"
-conda create -n rippleViewer --file requirements_win.txt --yes
-
-conda activate rippleViewer
-
-echo "python version: "$(python --version)
-
 export PYTHONPATH="${ENV_DIR}/Lib/site-packages"
 echo PYTHONPATH=$PYTHONPATH
+
+
+echo "python version: "$(python --version)
 
 echo "Please check if installation was successful. If not, abort by pressing Ctrl-C"
 echo "Otherwise, continue by pressing any other key."

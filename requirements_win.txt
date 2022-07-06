@@ -7,7 +7,7 @@ mkl_fft
 numba
 icc_rt
 blosc
-pyqt
+pyqt>=5.12
 cython
 fastcore
 ipykernel
@@ -49,3 +49,4 @@ yappi
 dill
 # for hdbscan
 daal4py
+pywin32>=303

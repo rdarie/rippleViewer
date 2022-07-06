@@ -22,7 +22,7 @@ debugpy @ file:///C:/ci/debugpy_1637073815078/work
 decorator @ file:///opt/conda/conda-bld/decorator_1643638310831/work
 dill @ file:///tmp/build/80754af9/dill_1623919422540/work
 entrypoints @ file:///C:/ci/entrypoints_1649926621247/work
--e git+https://github.com/rdarie/ephyviewer.git@15b09353c2a64ca11ec670a0cd54d7b3bcb485bf#egg=ephyviewer
+-e git+https://github.com/rdarie/ephyviewer.git@b3783f4b04a61848051a42bcd0f2c8aa6cb31818#egg=ephyviewer
 et-xmlfile==1.1.0
 executing @ file:///opt/conda/conda-bld/executing_1646925071911/work
 fastcore @ file:///home/conda/feedstock_root/build_artifacts/fastcore_1655529477366/work
@@ -77,7 +77,7 @@ pickleshare @ file:///tmp/build/80754af9/pickleshare_1606932040724/work
 Pillow==9.0.1
 platformdirs @ file:///tmp/build/80754af9/platformdirs_1638968569495/work
 prompt-toolkit @ file:///tmp/build/80754af9/prompt-toolkit_1633440160888/work
-protobuf==3.19.1
+protobuf==3.20.1
 psutil @ file:///C:/Windows/Temp/abs_b2c2fd7f-9fd5-4756-95ea-8aed74d0039flsd9qufz/croots/recipe/psutil_1656431277748/work
 pure-eval @ file:///opt/conda/conda-bld/pure_eval_1646925070566/work
 -e git+https://github.com/rdarie/pyacq.git@d00687cc4b73e4af680f8fca26c71332a89bbc70#egg=pyacq
@@ -92,8 +92,10 @@ PyOpenGL @ file:///home/conda/feedstock_root/build_artifacts/pyopengl_1652285526
 PyOpenGL-accelerate==3.1.6
 pyOpenSSL @ file:///opt/conda/conda-bld/pyopenssl_1643788558760/work
 pyparsing @ file:///tmp/build/80754af9/pyparsing_1635766073266/work
--e git+https://github.com/rdarie/pyqtgraph.git@a0496c86bb7937f077db2c9fd6e5ee449a3fc401#egg=pyqtgraph
--e git+https://github.com/rdarie/rippleViewer.git@1608d765ce4b41bd267029faba97f8ef417f21cd#egg=pyRippleViewer
+PyQt5==5.15.4
+PyQt5-sip @ file:///D:/bld/pyqt-split_1654255768807/work/pyqt_sip
+-e git+https://github.com/rdarie/pyqtgraph.git@81a36217b6757b724eeb8645db4ad283c389d161#egg=pyqtgraph
+-e git+https://github.com/rdarie/rippleViewer.git@264d134509fdf0b5ce326f8d1760e70891f5c55e#egg=pyRippleViewer
 pyserial==3.5
 PySide6==6.3.1
 PySide6-Addons==6.3.1
@@ -102,7 +104,7 @@ PySocks @ file:///C:/ci/pysocks_1605287845585/work
 python-dateutil @ file:///tmp/build/80754af9/python-dateutil_1626374649649/work
 pytools @ file:///home/conda/feedstock_root/build_artifacts/pytools_1656247651513/work
 pytz @ file:///C:/Windows/TEMP/abs_90eacd4e-8eff-491e-b26e-f707eba2cbe1ujvbhqz1/croots/recipe/pytz_1654762631027/work
-pywin32==302
+pywin32==303
 PyYAML==6.0
 pyzmq @ file:///C:/ci/pyzmq_1638435185959/work
 quantities @ file:///home/conda/feedstock_root/build_artifacts/quantities_1642537038651/work
@@ -113,7 +115,7 @@ scikit-learn-intelex==2021.20220215.153006
 scipy @ file:///C:/ci/scipy_1641555198988/work
 seaborn @ file:///tmp/build/80754af9/seaborn_1629307859561/work
 shiboken6==6.3.1
-sip==4.19.13
+sip @ file:///C:/ci/sip_1651047178816/work
 six @ file:///tmp/build/80754af9/six_1644875935023/work
 stack-data @ file:///opt/conda/conda-bld/stack_data_1646927590127/work
 threadpoolctl @ file:///Users/ktietz/demo/mc3/conda-bld/threadpoolctl_1629802263681/work
@@ -121,7 +123,7 @@ toml @ file:///tmp/build/80754af9/toml_1616166611790/work
 tornado @ file:///C:/ci/tornado_1606942392901/work
 tqdm @ file:///C:/ci/tqdm_1650618053064/work
 traitlets @ file:///tmp/build/80754af9/traitlets_1636710298902/work
--e git+https://github.com/rdarie/tridesclous.git@ed91deddd1829d61259f0271d849ba8c31eb5fda#egg=tridesclous
+-e git+https://github.com/rdarie/tridesclous.git@81258e3685e30a0bafa1fdfb2a5b0246615eb1d2#egg=tridesclous
 typing_extensions @ file:///opt/conda/conda-bld/typing_extensions_1647553014482/work
 uritemplate @ file:///home/conda/feedstock_root/build_artifacts/uritemplate_1634152692041/work
 urllib3 @ file:///C:/ci/urllib3_1650640043075/work
