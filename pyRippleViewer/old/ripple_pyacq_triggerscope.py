@@ -38,7 +38,7 @@ import pyRippleViewer
 from pyRippleViewer import pyqtgraph as pg
 from pyRippleViewer import ephyviewer as ephy
 from pyRippleViewer import pyacq as pq
-pq.QTriggeredOscilloscope
+pyacq.QTriggeredOscilloscope
 import sys
 
 def wrapper():
@@ -46,12 +46,12 @@ def wrapper():
     app = pg.mkQApp()
 
     # Create a manager to spawn worker process to record and process audio
-    # man = pq.create_manager()
+    # man = pyacq.create_manager()
     #
     # nodegroup_dev = man.create_nodegroup()
     # dev = nodegroup_dev.create_node(
     #     'XipppyBuffer', name='nip0')
-    txBuffer = pq.XipppyTxBuffer(name='nip0_tx', dummy=True)
+    txBuffer = pyacq.XipppyTxBuffer(name='nip0_tx', dummy=True)
     #
     requestedChannels = {
             # 'hi-res': [],
@@ -64,7 +64,7 @@ def wrapper():
         buffer_size_sec=5.,
         channels=requestedChannels, verbose=False, debugging=False)
     print(f'txBuffer.present_analogsignal_types = {txBuffer.present_analogsignal_types}')
-    for signalType in pq.ripple_signal_types:
+    for signalType in pyacq.ripple_signal_types:
         txBuffer.outputs[signalType].configure(
             protocol='tcp', interface='127.0.0.1', transfermode='sharedmem', double=True
             # protocol='tcp', interface='127.0.0.1', transfermode='plaindata', double=True
@@ -77,7 +77,7 @@ def wrapper():
     signalTypesToPlot = ['hifreq'] # ['hi-res', 'hifreq', 'stim']
 
     # create a converter
-    converter = pq.RippleStreamAdapter()
+    converter = pyacq.RippleStreamAdapter()
     converter.configure()
     converter.inputs['signals'].connect(txBuffer.outputs['hifreq'])
     converter.inputs['events'].connect(txBuffer.outputs['stim'])
@@ -86,7 +86,7 @@ def wrapper():
     converter.initialize()
 
     # Create a triggered oscilloscope to display data.
-    viewer = pq.QDigitalTriggeredOscilloscope()
+    viewer = pyacq.QDigitalTriggeredOscilloscope()
     viewer.configure(with_user_dialog=True)
     for signalType in ['signals', 'events']:
         viewer.inputs[signalType].connect(converter.outputs[signalType])

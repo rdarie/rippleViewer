@@ -34,10 +34,7 @@ if LOGGING:
         )
     logger = logging.getLogger(__name__)
 
-import pyRippleViewer
-from pyRippleViewer import pyqtgraph as pg
-from pyRippleViewer import ephyviewer as ephy
-from pyRippleViewer import pyacq as pq
+from pyRippleViewer import *
 
 import sys
 
@@ -46,12 +43,12 @@ def wrapper():
     app = pg.mkQApp()
 
     # Create a manager to spawn worker process to record and process audio
-    # man = pq.create_manager()
+    # man = pyacq.create_manager()
     #
     # nodegroup_dev = man.create_nodegroup()
     # dev = nodegroup_dev.create_node(
     #     'XipppyBuffer', name='nip0')
-    txBuffer = pq.XipppyTxBuffer(name='nip0_tx', dummy=True)
+    txBuffer = pyacq.XipppyTxBuffer(name='nip0_tx', dummy=True)
     #
     requestedChannels = {
             # 'hi-res': [],
@@ -64,39 +61,39 @@ def wrapper():
         buffer_size_sec=5.,
         channels=requestedChannels, verbose=False, debugging=False)
     print(f'txBuffer.present_analogsignal_types = {txBuffer.present_analogsignal_types}')
-    for signalType in pq.ripple_signal_types:
+    for signalType in pyacq.ripple_signal_types:
         txBuffer.outputs[signalType].configure(
             protocol='tcp', interface='127.0.0.1', transfermode='sharedmem', double=True
             # protocol='tcp', interface='127.0.0.1', transfermode='plaindata', double=True
             )
     txBuffer.initialize()
 
-    showSpikes = True
+    showSpikes = False
     showScope = True
-    showTFR = False
-    signalTypesToPlot = ['hifreq', 'stim'] # ['hi-res', 'hifreq', 'stim']
-    rxBuffer = pq.XipppyRxBuffer(
+    showTFR = True
+    signalTypesToPlot = ['hifreq'] # ['hi-res', 'hifreq', 'stim']
+    rxBuffer = pyacq.XipppyRxBuffer(
         name='nip_rx0',
         requested_signal_types=signalTypesToPlot
         )
     rxBuffer.configure()
     for signalType in signalTypesToPlot:
         rxBuffer.inputs[signalType].connect(txBuffer.outputs[signalType])
-    for signalType in pq.ripple_signal_types:
+    for signalType in pyacq.ripple_signal_types:
         rxBuffer.outputs[signalType].configure(
             protocol='tcp', interface='127.0.0.1', transfermode='sharedmem', double=True
             # protocol='tcp', interface='127.0.0.1', transfermode='plaindata', double=True
             )
     rxBuffer.initialize()
 
-    ephyWin = pq.NodeMainViewer(
+    ephyWin = pyacq.NodeMainViewer(
         node=rxBuffer, debug=False,
         speed=5.
         )
 
     firstSource = True
     for i, signalType in enumerate(signalTypesToPlot):
-        if signalType not in pq.ripple_analogsignal_types:
+        if signalType not in pyacq.ripple_analogsignal_types:
             continue
         if signalType not in rxBuffer.sources:
             continue
@@ -137,7 +134,7 @@ def wrapper():
 
     firstSource = True
     for i, signalType in enumerate(signalTypesToPlot):
-        if signalType not in pq.ripple_event_types:
+        if signalType not in pyacq.ripple_event_types:
             continue
         if signalType not in rxBuffer.sources:
             continue

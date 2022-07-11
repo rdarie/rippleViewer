@@ -14,7 +14,6 @@ from inspect import getmembers, isfunction, isclass
 psutil_process = psutil.Process(os.getpid())
 startTime = 0
 
-runProfiler = True
 
 yappiNameExplanations = {
     'name': 'name of the executed function',

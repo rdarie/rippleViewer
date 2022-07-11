@@ -24,10 +24,7 @@ if LOGGING:
         )
     logger = logging.getLogger(__name__)
 
-import pyRippleViewer
-from pyRippleViewer import pyqtgraph as pg
-from pyRippleViewer import ephyviewer as ephy
-from pyRippleViewer import pyacq as pq
+from pyRippleViewer import *
 
 import os, sys, re, socket
 
@@ -52,32 +49,31 @@ def main():
     try:
         # Start a server
         print("Starting server at: {}".format(rpc_addr))
-        server = pq.RPCServer(address=rpc_addr)
+        server = pyacq.RPCServer(address=rpc_addr)
         server.run_lazy()
-        host = pq.core.Host(name=socket.gethostname(), poll_procs=True)
+        host = pyacq.core.Host(name=socket.gethostname(), poll_procs=True)
         server['host'] = host
         print("Running server at: %s" % server.address.decode())
 
         # Create a xipppy buffer node
-        dev = pq.XipppyTxBuffer(
-            name='nip0', dummy=True)
+        dev = pyacq.XipppyTxBuffer(name='nip0', dummy=True)
         server['nip0'] = dev
 
         requestedChannels = {
-            # 'hi-res': [],
-            # 'hifreq': [2, 3, 12],
-            # 'stim': [chIdx for chIdx in range(0, 32, 3)],
+            # 'hi-res': [2, 4],
+            # 'hifreq': [chIdx for chIdx in range(64)],
+            # 'stim': [chIdx for chIdx in range(0, 8)],
             }
 
         dev.configure(
-            sample_interval_sec=50e-3, sample_chunksize_sec=50e-3,
+            sample_interval_sec=100e-3, sample_chunksize_sec=100e-3,
             buffer_size_sec=5.,
             channels=requestedChannels, verbose=False, debugging=False)
         print(f'dev.present_analogsignal_types = {dev.present_analogsignal_types}')
-        for signalType in pq.ripple_signal_types:
+        for signalType in pyacq.ripple_signal_types:
             dev.outputs[signalType].configure(
-                # protocol='tcp', interface='127.0.0.1', transfermode='sharedmem', double=True
-                protocol='tcp', interface='127.0.0.1', transfermode='plaindata', double=True
+                protocol='tcp', interface='127.0.0.1', transfermode='sharedmem', double=True
+                # protocol='tcp', interface='127.0.0.1', transfermode='plaindata', double=True
                 )
         dev.initialize()
         dev.start()

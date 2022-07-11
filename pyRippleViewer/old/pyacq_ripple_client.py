@@ -46,7 +46,7 @@ signalTypesToPlot = ['hifreq']
 app = pg.mkQApp()
 
 # In host/process/thread 2: (you must communicate rpc_addr manually)
-client = pq.RPCClient.get_client(rpc_addr)
+client = pyacq.RPCClient.get_client(rpc_addr)
 
 # Get a proxy to published object; use this (almost) exactly as you
 # would a local object:
@@ -58,7 +58,7 @@ if showScope:
     # osc = nodegroup_osc.create_node('QOscilloscope', name='scope0')
     #
     # Create a local scope
-    osc = pq.QOscilloscope()
+    osc = pyacq.QOscilloscope()
     #
     osc.configure(
         with_user_dialog=True, window_label='scope0', max_xsize=20.)
@@ -82,7 +82,7 @@ if showTFR:
     ##  tfr = nodegroup_tfr.create_node('QTimeFreq', name='tfr0')
     #
     # Create a local time frequency viewer
-    tfr = pq.QTimeFreq()
+    tfr = pyacq.QTimeFreq()
     #
     tfr.configure(
         with_user_dialog=True, window_label='tfr0',
@@ -107,7 +107,7 @@ if showEphyTraceViewer:
     #
     # Create a local ephyviewer TraceViewer...
     for idx, signalTypeToPlot in enumerate(signalTypesToPlot):
-        ephy_scope = pq.TraceViewerNode(
+        ephy_scope = pyacq.TraceViewerNode(
             name='traceviewer_{}'.format(signalTypeToPlot),
             useOpenGL=True, controls_parent=(idx == 0))
         #
@@ -134,12 +134,12 @@ else:
 
 
 # Create a monitor node
-mon = pq.StreamMonitor()
+mon = pyacq.StreamMonitor()
 mon.configure()
 mon.input.connect(dev.outputs['stim'])
 mon.initialize()
 if showEphySpikes:
-    stimSpikeSource = pq.InputStreamEventAndEpochSource(mon.input)
+    stimSpikeSource = pyacq.InputStreamEventAndEpochSource(mon.input)
     ephy_spk_viewer = ephyviewer.SpikeTrainViewer(
         name='stim_spikes', source=stimSpikeSource)
 

@@ -22,14 +22,14 @@ if not re.match(r'tcp://(\*|([0-9\.]+)):(\*|[0-9]+)', rpc_addr):
 
 # Start a server
 print("Starting server at: {}".format(rpc_addr))
-server = pq.RPCServer(address=rpc_addr)
+server = pyacq.RPCServer(address=rpc_addr)
 server.run_lazy()
-host = pq.core.Host(name=socket.gethostname(), poll_procs=True)
+host = pyacq.core.Host(name=socket.gethostname(), poll_procs=True)
 server['host'] = host
 print("Running server at: %s" % server.address.decode())
 
 # Create a xipppy buffer node
-dev = pq.XipppyTxBuffer(
+dev = pyacq.XipppyTxBuffer(
     name='nip0', dummy=True)
 server['nip0'] = dev
 
@@ -43,7 +43,7 @@ dev.configure(
     sample_interval_sec=100e-3, sample_chunksize_sec=50e-3,
     buffer_size_sec=500e-3,
     channels=requestedChannels, verbose=False, debugging=False)
-for signalType in pq.ripple_signal_types:
+for signalType in pyacq.ripple_signal_types:
     dev.outputs[signalType].configure(
         # protocol='tcp', interface='127.0.0.1', transfermode='sharedmem', double=True
         protocol='tcp', interface='127.0.0.1', transfermode='plaindata', double=True

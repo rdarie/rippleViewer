@@ -56,7 +56,7 @@ for PREREQ in ${PIP_PACKAGES[*]}; do
     python -m pip install "${PREREQ}" --no-build-isolation --upgrade --no-cache-dir
 done
 
-for FILE in ./external_wheels/*.whl; do
+for FILE in ./external_wheels/windows/*.whl; do
     echo "Installing ${FILE}"
     python -m pip install "${FILE}" --no-build-isolation --upgrade --no-cache-dir
 done
@@ -67,16 +67,12 @@ GitFolder="${HOME}/Documents/GitHub"
 RepoList=(\
 "pyqtgraph" \
 "ephyviewer" \
-"tridesclous"
 "pyacq" \
-"neurotic" \
 )
 
 RepoOptsList=(\
 "" \
 " -b rippleViewerV2" \
-" -b rippleViewer" \
-"" \
 "" \
 )
 
@@ -137,4 +133,4 @@ conda env export > ./full-environment-win.yml
 conda env export --from-history > ./short-environment-win.yml
 
 conda env config vars set PYQTGRAPH_QT_LIB=PySide6
-export PYQTGRAPH_QT_LIB=PySide6
+# export PYQTGRAPH_QT_LIB=PySide6

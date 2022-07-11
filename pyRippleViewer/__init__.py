@@ -1,21 +1,26 @@
 
 import sys
+import PySide6
+import pyqtgraph as pg
+import ephyviewer as ephy
+from ephyviewer.myqt import QT, QT_LIB
+import pyacq
+
+from .tridesclous import *
+
 if sys.platform == 'win32':
     import ctypes
     winmm = ctypes.WinDLL('winmm')
     winmm.timeBeginPeriod(1)
 
-import PySide6
-import pyqtgraph
-
 # pyqtgraphOpts = dict(useOpenGL=True, enableExperimental=True, useNumba=True)
-pyqtgraphOpts = dict()
-pyqtgraph.setConfigOptions(**pyqtgraphOpts)
+pyqtgraphOpts = dict(useNumba=True)
+pg.setConfigOptions(**pyqtgraphOpts)
 
 # don't limit frame rate to vsync
-sfmt = pyqtgraph.Qt.QtGui.QSurfaceFormat()
+sfmt = QT.QSurfaceFormat()
 sfmt.setSwapInterval(0)
-pyqtgraph.Qt.QtGui.QSurfaceFormat.setDefaultFormat(sfmt)
+QT.QSurfaceFormat.setDefaultFormat(sfmt)
 
-import ephyviewer
-import pyacq
+from .profiling_opts import *
+yappiModulesToPrint = [pyacq, ephy, pg]  # [pq, ephy, pg]

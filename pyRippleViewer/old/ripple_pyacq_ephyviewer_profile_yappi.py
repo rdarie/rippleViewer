@@ -21,11 +21,11 @@ showEphyFrequencyViewer = True
 showEphyAnnotator = False
 
 dummyKWArgs = {
-    'hires_fun': pq.randomSineGenerator(
+    'hires_fun': pyacq.randomSineGenerator(
         centerFreq=20, sr=2000, noiseStd=0.05, sineAmp=1.),
-    # 'hifreq_fun': pq.randomSineGenerator(
+    # 'hifreq_fun': pyacq.randomSineGenerator(
     #     centerFreq=40, dt=15000, noiseStd=0.05, sineAmp=1.),
-    'hifreq_fun': pq.randomChirpGenerator(
+    'hifreq_fun': pyacq.randomChirpGenerator(
         startFreq=10, stopFreq=40, freqPeriod=2.,
         sr=15000, noiseStd=0.05, sineAmp=1.),
     'signal_type_lookup': {'hifreq': [eNum for eNum in range(1, 129)]}
@@ -41,12 +41,12 @@ plt.plot(hires_data.reshape((20000, 3), order='F')); plt.show()'''
 app = ephyviewer.mkQApp()
 
 # Create a manager to spawn worker process to record and process audio
-# man = pq.create_manager()
+# man = pyacq.create_manager()
 #
 # nodegroup_dev = man.create_nodegroup()
 # dev = nodegroup_dev.create_node(
 #     'XipppyBuffer', name='nip0')
-dev = pq.XipppyBuffer(
+dev = pyacq.XipppyBuffer(
     name='nip0', dummy=True,
     dummy_kwargs=dummyKWArgs)
 #
@@ -59,7 +59,7 @@ signalTypesToPlot = ['hifreq', 'hi-res']
 dev.configure(
     sample_interval_sec=50e-3, sample_chunksize_sec=50e-3,
     channels=requestedChannels, verbose=False, debugging=False)
-for signalType in pq.ripple_analogsignal_types:
+for signalType in pyacq.ripple_analogsignal_types:
     dev.outputs[signalType].configure(
         protocol='tcp', transfermode='sharedmem', double=True
         # protocol='tcp', interface='127.0.0.1', transfermode='plaindata'
@@ -72,7 +72,7 @@ if showScope:
     # osc = nodegroup_osc.create_node('QOscilloscope', name='scope0')
     #
     # Create a local scope
-    osc = pq.QOscilloscope()
+    osc = pyacq.QOscilloscope()
     #
     osc.configure(
         with_user_dialog=True, window_label='scope0', max_xsize=20.)
@@ -96,7 +96,7 @@ if showTFR:
     ##  tfr = nodegroup_tfr.create_node('QTimeFreq', name='tfr0')
     #
     # Create a local time frequency viewer
-    tfr = pq.QTimeFreq()
+    tfr = pyacq.QTimeFreq()
     #
     tfr.configure(
         with_user_dialog=True, window_label='tfr0',
@@ -121,7 +121,7 @@ if showEphyTraceViewer:
     #
     # Create a local ephyviewer TraceViewer...
     for idx, signalTypeToPlot in enumerate(signalTypesToPlot):
-        ephy_scope = pq.TraceViewerNode(
+        ephy_scope = pyacq.TraceViewerNode(
             name='traceviewer_{}'.format(signalTypeToPlot),
             controlsParentViewer=(idx == 0))
         #
