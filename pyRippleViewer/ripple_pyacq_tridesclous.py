@@ -8,35 +8,15 @@ Simple example of a custom Node class that generates a stream of random
 values. 
 
 """
-import yappi
-from profiling_opts import runProfiler, LOGGING, logFormatDict
-
-from datetime import datetime as dt
-import os
-import logging
-import time
-import pdb
-from pathlib import Path
-
-now = dt.now()
-
-if LOGGING:
-    pathHere = Path(__file__)
-    thisFileName = pathHere.stem
-    logFileDir = pathHere.resolve().parent.parent
-    logFileName = os.path.join(
-        logFileDir, 'logs',
-        f"{thisFileName}_{now.strftime('%Y_%m_%d_%H%M')}.log"
-        )
-    logging.basicConfig(
-        filename=logFileName,
-        **logFormatDict
-        )
-    logger = logging.getLogger(__name__)
 
 from pyRippleViewer import *
+import time
 
-def wrapper():
+if LOGGING:
+    logger = startLogger(__file__, __name__)
+
+
+def main():
     # Start Qt application
     app = pg.mkQApp()
 
@@ -66,10 +46,7 @@ def wrapper():
             )
     txBuffer.initialize()
 
-    showSpikes = False
-    showScope = True
-    showTFR = False
-    signalTypesToPlot = ['hifreq'] # ['hi-res', 'hifreq', 'stim']
+    signalTypeToPlot = 'hifreq' # ['hi-res', 'hifreq', 'stim']
 
     channel_info = txBuffer.outputs['hi-res'].params['channel_info']
     channel_group = {
@@ -79,7 +56,7 @@ def wrapper():
     triggerAcc = RippleTriggerAccumulator()
     triggerAcc.configure(channel_group=channel_group)
     
-    triggerAcc.inputs['signals'].connect(txBuffer.outputs['hifreq'])
+    triggerAcc.inputs['signals'].connect(txBuffer.outputs[signalTypeToPlot])
     triggerAcc.inputs['events'].connect(txBuffer.outputs['stim'])
 
     triggerAcc.initialize()
@@ -92,6 +69,27 @@ def wrapper():
     win.start_refresh()
     #
     app.exec()
+    return
 
 if __name__ == '__main__':
-    wrapper()
+    if runProfiler:
+        runMetadata = {}
+        yappi.start()
+        start_time = time.perf_counter()
+    try:
+        ###############
+        main()
+        ###############
+    finally:
+        if runProfiler:
+            print('Saving yappi profiler outputs')
+            yappi.stop()
+            stop_time = time.perf_counter()
+            run_time = stop_time - start_time
+            profilerResultsFileName = getProfilerPath(__file__)
+            #
+            from pyRippleViewer.profiling import profiling as prf   
+            prf.processYappiResults(
+                fileName=profilerResultsFileName, folder=profilerResultsFolder,
+                minimum_time=yappi_minimum_time, modulesToPrint=yappiModulesToPrint,
+                run_time=run_time, metadata=runMetadata)
