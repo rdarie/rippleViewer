@@ -7,8 +7,8 @@ from datetime import datetime as dt
 
 packageImportTime = dt.now()
 
-runProfiler = False
-LOGGING = True
+runProfiler = True
+LOGGING = False
 
 logFormatDict = dict(
     format='L{levelno}: {asctime}{msecs: >5.1f}: {name: >30} thr. {thread: >12X}: thr. n. {threadName}: {message}',
@@ -34,13 +34,17 @@ def startLogger(
 
 dateStr = packageImportTime.strftime('%Y%m%d')
 timeStr = packageImportTime.strftime('%H%M')
-profilerResultsFolder = '../yappi_profiler_outputs/{}'.format(dateStr)
 ##
 yappiClockType = 'cpu'
-yappi_minimum_time = 1e-1
+yappi_minimum_time = 1e-2
 yappi.set_clock_type(yappiClockType)
 
 def getProfilerPath(filePath):
+    pathHere = Path(filePath)
+    thisFileName = pathHere.stem
     profilerResultsFileName = '{}_{}_pid_{}'.format(
-        filePath.split('.')[0], timeStr, os.getpid())
-    return profilerResultsFileName
+        thisFileName, timeStr, os.getpid())
+    logFileDir = pathHere.resolve().parent.parent
+    profilerResultsFolder = os.path.join(
+        logFileDir, 'yappi_profiler_outputs', f'{dateStr}')
+    return profilerResultsFileName, profilerResultsFolder

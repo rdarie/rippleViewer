@@ -43,8 +43,8 @@ def main():
         }
 
     dev.configure(
-        sample_interval_sec=100e-3, sample_chunksize_sec=100e-3,
-        buffer_size_sec=5.,
+        sample_interval_sec=100e-3, sample_chunksize_sec=50e-3,
+        buffer_size_sec=10.,
         channels=requestedChannels, verbose=False, debugging=False)
     print(f'dev.present_analogsignal_types = {dev.present_analogsignal_types}')
     for signalType in pyacq.ripple_signal_types:
@@ -78,7 +78,7 @@ if __name__ == '__main__':
             yappi.stop()
             stop_time = time.perf_counter()
             run_time = stop_time - start_time
-            profilerResultsFileName = getProfilerPath(__file__)
+            profilerResultsFileName, profilerResultsFolder = getProfilerPath(__file__)
             #
             from pyRippleViewer.profiling import profiling as prf   
             prf.processYappiResults(

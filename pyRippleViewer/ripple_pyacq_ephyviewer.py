@@ -37,7 +37,7 @@ def main():
 
     txBuffer.configure(
         sample_interval_sec=100e-3, sample_chunksize_sec=100e-3,
-        buffer_size_sec=5.,
+        buffer_size_sec=20.,
         channels=requestedChannels, verbose=False, debugging=False)
     print(f'txBuffer.present_analogsignal_types = {txBuffer.present_analogsignal_types}')
     for signalType in pyacq.ripple_signal_types:
@@ -47,10 +47,10 @@ def main():
             )
     txBuffer.initialize()
 
-    showSpikes = False
+    showSpikes = True
     showScope = True
     showTFR = True
-    signalTypesToPlot = ['hifreq'] # ['hi-res', 'hifreq', 'stim']
+    signalTypesToPlot = ['hifreq', 'stim'] # ['hi-res', 'hifreq']
     rxBuffer = pyacq.XipppyRxBuffer(
         name='nip_rx0',
         requested_signal_types=signalTypesToPlot
@@ -80,8 +80,6 @@ def main():
         if showScope:
             traceview = ephy.TraceViewer(
                 source=sig_source, name='signal_{}'.format(signalType))
-            traceview.params['scale_mode'] = 'by_channel'
-            traceview.params['display_labels'] = True
             traceview.params_controller.on_automatic_color(cmap_name='Set3')
         if showTFR:
             tfrview = ephy.TimeFreqViewer(

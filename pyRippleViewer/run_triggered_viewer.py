@@ -61,8 +61,9 @@ def main():
     win.show()
     
     # start nodes
-    triggerAcc.start()
     win.start_refresh()
+    triggerAcc.start()
+
     print(f'{__file__} starting qApp ...')
     app.exec()
 
@@ -81,7 +82,7 @@ if __name__ == '__main__':
             yappi.stop()
             stop_time = time.perf_counter()
             run_time = stop_time - start_time
-            profilerResultsFileName = getProfilerPath(__file__)
+            profilerResultsFileName, profilerResultsFolder = getProfilerPath(__file__)
             #
             from pyRippleViewer.profiling import profiling as prf   
             prf.processYappiResults(

@@ -63,15 +63,15 @@ def main():
         rxBuffer.inputs[signalType].connect(txBuffer.outputs[signalType])
     for signalType in pyacq.ripple_signal_types:
         rxBuffer.outputs[signalType].configure(
-            # protocol='tcp', interface='127.0.0.1', transfermode='sharedmem', double=True
-            protocol='inproc', transfermode='plaindata', double=True
+            # protocol='tcp', interface='127.0.0.1', transfermode='sharedmem', double=True,
+            # protocol='inproc', transfermode='sharedmem', double=True,
+            protocol='inproc', transfermode='plaindata', double=True,
             )
     rxBuffer.initialize()
-    rxBuffer.start()
 
     ephyWin = pyacq.NodeMainViewer(
         node=rxBuffer, debug=False,
-        speed=10.
+        speed=5.
         )
 
     firstSource = True
@@ -84,8 +84,6 @@ def main():
         if showScope:
             traceview = ephy.TraceViewer(
                 source=sig_source, name='signal_{}'.format(signalType))
-            traceview.params['scale_mode'] = 'by_channel'
-            traceview.params['display_labels'] = True
             traceview.params_controller.on_automatic_color(cmap_name='Set3')
         if showTFR:
             tfrview = ephy.TimeFreqViewer(
@@ -137,7 +135,9 @@ def main():
                     tabify_with='spikes_{}'.format(previousSignalType))
         previousSignalType = signalType
     ephyWin.show()
+    
     ephyWin.start_viewers()
+    rxBuffer.start()
     ######################
     print(f'{__file__} starting qApp...')
     app.exec()
@@ -159,7 +159,7 @@ if __name__ == '__main__':
             yappi.stop()
             stop_time = time.perf_counter()
             run_time = stop_time - start_time
-            profilerResultsFileName = getProfilerPath(__file__)
+            profilerResultsFileName, profilerResultsFolder = getProfilerPath(__file__)
             #
             from pyRippleViewer.profiling import profiling as prf   
             prf.processYappiResults(
