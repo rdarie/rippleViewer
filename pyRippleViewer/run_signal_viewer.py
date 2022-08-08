@@ -42,11 +42,14 @@ def main():
     # Start Qt application
     app = pg.mkQApp()
     #
-    showSpikes = True
+    showSpikes = False
     showScope = True
     showTFR = True
-    signalTypesToPlot = ['hifreq', 'stim'] # ['hi-res', 'hifreq', 'stim']
-
+    signalTypesToPlot = ['hifreq'] # ['hi-res', 'hifreq', 'stim']
+    
+    if showSpikes:
+        signalTypesToPlot += ['stim']
+        
     # In host/process/thread 2: (you must communicate rpc_addr manually)
     client = pyacq.RPCClient.get_client(rpc_addr)
 

@@ -1,0 +1,52 @@
+env_specs:
+  rippleViewerEnv:
+    description: "Conda environment for rippleViewer project"
+    channels:
+      - defaults
+      - conda-forge
+      - intel
+    packages:
+      - scikit-learn==1.1.1
+      - psutil
+      - hdbscan
+      - pyopencl
+      - pyyaml
+      - pyqt[version='>=5.12']
+      - cython
+      - joblib
+      - decorator==5.1.1
+      - scikit-learn-intelex
+      - openpyxl
+      - pyzmq
+      - icc_rt
+      - seaborn
+      - pywin32[version='>=303']
+      - mkl
+      - dill
+      - toml
+      - pyopengl[version='>=3.1.6']
+      - python==3.8.5
+      - tqdm
+      - loky
+      - line_profiler
+      - ipykernel
+      - vispy[version='>=0.9']
+      - matplotlib
+      - pyserial
+      - numpy[version='>=1.22']
+      - blosc
+      - imageio
+      - pandas
+      - av
+      - python-neo[version='>=0.9']
+      - jinja2
+      - msgpack-python
+      - pydrive2
+      - mkl_fft
+      - scipy
+      - fastcore
+      - numba
+      - yappi
+      - pyaudio
+      - pip
+      - daal4py

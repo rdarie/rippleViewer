@@ -7,8 +7,8 @@ from datetime import datetime as dt
 
 packageImportTime = dt.now()
 
-runProfiler = True
-LOGGING = False
+runProfiler = False
+LOGGING = True
 
 logFormatDict = dict(
     format='L{levelno}: {asctime}{msecs: >5.1f}: {name: >30} thr. {thread: >12X}: thr. n. {threadName}: {message}',
@@ -34,7 +34,7 @@ def startLogger(
 
 dateStr = packageImportTime.strftime('%Y%m%d')
 timeStr = packageImportTime.strftime('%H%M')
-##
+
 yappiClockType = 'cpu'
 yappi_minimum_time = 1e-2
 yappi.set_clock_type(yappiClockType)

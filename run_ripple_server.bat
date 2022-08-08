@@ -1,0 +1,2 @@
+conda activate rippleViewer
+python pyRippleViewer/run_xipppy_server.py

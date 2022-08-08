@@ -14,7 +14,7 @@ if sys.platform == 'win32':
     winmm.timeBeginPeriod(1)
 
 # pyqtgraphOpts = dict(useOpenGL=True, enableExperimental=True, useNumba=True)
-pyqtgraphOpts = dict(useNumba=True)
+pyqtgraphOpts = dict(useOpenGL=True, enableExperimental=True, useNumba=True)
 pg.setConfigOptions(**pyqtgraphOpts)
 
 # don't limit frame rate to vsync

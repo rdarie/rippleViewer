@@ -156,3 +156,6 @@ cython_debug/
 line_profiler_outputs/
 yappi_profiler_outputs/
 logs/
+
+# anaconda-project stuff
+envs/
