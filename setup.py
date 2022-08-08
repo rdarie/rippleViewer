@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
-with open('requirements.txt') as fp:
-    install_requires = fp.read()
+# with open('requirements.txt') as fp:
+#     install_requires = fp.read()
 setup(
     name='pyRippleViewer',
     version='0.1',
