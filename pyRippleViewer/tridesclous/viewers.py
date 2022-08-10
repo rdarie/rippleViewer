@@ -541,7 +541,8 @@ class RippleTriggerAccumulator(TriggerAccumulator):
     def _close(self):
         pass
 
-    def refresh_colors(self, reset=True, palette='husl', interleaved=True):
+    def refresh_colors(
+            self, reset=True, palette='Set3', interleaved=False):
         
         labels = self.positive_cluster_labels
         
@@ -708,7 +709,7 @@ class RippleCatalogueController(ControllerBase):
         else:
             return None
         
-    def refresh_colors(self, reset=True, palette = 'husl'):
+    def refresh_colors(self, reset=True, palette = 'Set3'):
         self.dataio.refresh_colors(reset=reset, palette=palette)
         
         self.qcolors = {}

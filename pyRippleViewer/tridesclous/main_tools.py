@@ -362,7 +362,7 @@ def compute_cross_correlograms(spike_indexes, spike_labels,
     
 
 
-def get_color_palette(n, palette='husl', output='int32'):
+def get_color_palette(n, palette='Set3', output='int32'):
     # this depend now on seaborn but seaborn will be renmoved as dependency soon
     # because it break joblib
     import seaborn as sns
