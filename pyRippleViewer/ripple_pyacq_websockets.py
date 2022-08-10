@@ -1,9 +1,21 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2016, French National Center for Scientific Research (CNRS)
+# Distributed under the (new) BSD License. See LICENSE for more info.
+"""
+Noise generator node
+
+Simple example of a custom Node class that generates a stream of random
+values. 
+
+"""
+
 from pyRippleViewer import *
-import os, sys, re, socket, time, argparse
+import pdb
+import sys, re, socket, time
+import argparse
 
 if LOGGING:
     logger = startLogger(__file__, __name__)
-
 
 usage = """Usage:
     python
@@ -12,12 +24,22 @@ usage = """Usage:
 """
 
 parser = argparse.ArgumentParser()
+parser.add_argument('-ip', '--server_ip', required=False, help="Sets the server's IP address")
+parser.add_argument('-p', '--server_port', required=False, help="Sets the server's IP address")
 parser.add_argument('-pyacq_ip', '--pyacq_server_ip', required=False, help="Sets the server's IP address")
 parser.add_argument('-pyacq_p', '--pyacq_server_port', required=False, help="Sets the server's IP address")
 args = parser.parse_args()
 
+webSocketConfOpts = dict(
+    server_ip='10.9.145.31', server_port=7890
+    )
+if args.server_ip is not None:
+    webSocketConfOpts['server_ip'] = args.server_ip
+if args.server_port is not None:
+    webSocketConfOpts['server_port'] = args.server_port
+
 pyacqServerOpts = dict(
-    ip='127.0.0.1', port="5001"
+    ip='127.0.0.1', port="5002"
     )
 if args.pyacq_server_ip is not None:
     pyacqServerOpts['ip'] = args.pyacq_server_ip
@@ -35,37 +57,24 @@ def main():
     server['host'] = host
     print("Running server at: %s" % server.address.decode())
 
-    # Create a xipppy buffer node
-    dev = pyacq.XipppyTxBuffer(name='nip0', dummy=True)
-    server['nip0'] = dev
+    stimPacketRx = pyacq.StimPacketReceiver()
+    server['stimPacketRx'] = stimPacketRx
 
-    requestedChannels = {
-        # 'hi-res': [2, 4],
-        # 'hifreq': [chIdx for chIdx in range(64)],
-        # 'stim': [chIdx for chIdx in range(0, 8)],
-        }
-
-    dev.configure(
-        sample_interval_sec=100e-3, sample_chunksize_sec=50e-3,
-        buffer_size_sec=10.,
-        channels=requestedChannels, verbose=False, debugging=False)
-    print(f'dev.present_analogsignal_types = {dev.present_analogsignal_types}')
-    for signalType in pyacq.ripple_signal_types:
-        dev.outputs[signalType].configure(
-            protocol='tcp', interface=pyacqServerOpts['ip'],
-            transfermode='sharedmem', double=True,
-            # transfermode='plaindata', double=True
-            )
-    dev.initialize()
+    stimPacketRx.configure(**webSocketConfOpts)
+    stimPacketRx.outputs['stim_packets'].configure(
+        protocol='tcp', interface='127.0.0.1', transfermode='plaindata', double=True
+        )
+    stimPacketRx.initialize()
     
-    win = pyacq.PyacqServerWindow(server=server, winTitle='xipppy server')
+    win = pyacq.PyacqServerWindow(server=server, winTitle='websockets listener')
     win.show()
-    ######################
-    dev.start()
+    
+    # start nodes
+    stimPacketRx.start()
     win.start()
+
+    print(f'{__file__} starting qApp ...')
     app.exec()
-    ######################
-    return
 
 if __name__ == '__main__':
     if runProfiler:

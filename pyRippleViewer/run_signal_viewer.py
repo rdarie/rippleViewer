@@ -42,7 +42,7 @@ def main():
     # Start Qt application
     app = pg.mkQApp()
     #
-    showSpikes = False
+    showSpikes = True
     showScope = True
     showTFR = True
     signalTypesToPlot = ['hifreq'] # ['hi-res', 'hifreq', 'stim']
@@ -74,7 +74,7 @@ def main():
 
     ephyWin = pyacq.NodeMainViewer(
         node=rxBuffer, debug=False,
-        speed=5.
+        speed=10.
         )
 
     firstSource = True

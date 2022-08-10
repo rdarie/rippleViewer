@@ -1,6 +1,6 @@
 python==3.8.5
-pip
-numpy>=1.22
+websockets
+numpy==1.22
 scipy
 mkl
 mkl_fft
@@ -49,4 +49,3 @@ yappi
 dill
 # for hdbscan
 daal4py
-pywin32>=303

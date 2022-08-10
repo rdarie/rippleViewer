@@ -204,6 +204,9 @@ class OnlineClusterBaseList(WidgetBase):
     Base for ClusterPeakList (catalogue window) and ClusterSpikeList (Peeler window)
     """
     
+    sort_by_names = ['label', 'channel', 'amplitude', 'nb_peak']
+    labels_in_table = ['cluster_label', 'show/hide', 'nb_peaks', 'channel']
+
     def __init__(self, controller=None, parent=None):
         WidgetBase.__init__(self, parent=parent, controller=controller)
         
@@ -214,7 +217,7 @@ class OnlineClusterBaseList(WidgetBase):
         self.layout.addLayout(h)
         h.addWidget(QT.QLabel('sort by'))
         self.combo_sort = QT.QComboBox()
-        self.combo_sort.addItems(['label', 'channel', 'amplitude', 'nb_peak'])
+        self.combo_sort.addItems(self.sort_by_names)
         self.combo_sort.currentIndexChanged.connect(self.refresh)
         h.addWidget(self.combo_sort)
         h.addStretch()
@@ -235,7 +238,8 @@ class OnlineClusterBaseList(WidgetBase):
         self.table.itemChanged.disconnect(self.on_item_changed)
         
         self.table.clear()
-        labels = ['cluster_label', 'show/hide', 'nb_peaks', 'channel']
+        labels = self.labels_in_table
+
         self.table.setColumnCount(len(labels))
         self.table.setHorizontalHeaderLabels(labels)
         #~ self.table.setMinimumWidth(100)
@@ -248,7 +252,7 @@ class OnlineClusterBaseList(WidgetBase):
         sort_mode = str(self.combo_sort.currentText())
         
         clusters = self.controller.clusters
-        clusters = clusters[clusters['cluster_label']>=0]
+        clusters = clusters[clusters['cluster_label'] >= 0]
         if sort_mode=='label':
             order =np.arange(clusters.size)
         elif sort_mode=='channel':
@@ -266,35 +270,36 @@ class OnlineClusterBaseList(WidgetBase):
         
         for i, k in enumerate(cluster_labels):
             color = self.controller.qcolors.get(k, QT.QColor( 'white'))
-            pix = QT.QPixmap(16,16)
+            pix = QT.QPixmap(16, 16)
             pix.fill(color)
             icon = QT.QIcon(pix)
             
-            if k<0:
+            if k < 0:
                 name = '{} ({})'.format(k, labelcodes.to_name[k])
             else:
                 name = '{}'.format(k)
+
             item = QT.QTableWidgetItem(name)
             item.setFlags(QT.Qt.ItemIsEnabled|QT.Qt.ItemIsSelectable)
-            self.table.setItem(i,0, item)
+            self.table.setItem(i, 0, item)
             item.setIcon(icon)
             
             item = QT.QTableWidgetItem('')
             item.setFlags(QT.Qt.ItemIsEnabled|QT.Qt.ItemIsSelectable|QT.Qt.ItemIsUserCheckable)
             
             item.setCheckState({ False: QT.Qt.Unchecked, True : QT.Qt.Checked}[self.controller.cluster_visible.get(k, False)])
-            self.table.setItem(i,1, item)
+            self.table.setItem(i, 1, item)
             item.label = k
 
             item = QT.QTableWidgetItem('{}'.format(self.controller.cluster_count.get(k, 0)))
             item.setFlags(QT.Qt.ItemIsEnabled|QT.Qt.ItemIsSelectable)
-            self.table.setItem(i,2, item)
+            self.table.setItem(i, 2, item)
             
             c = self.controller.get_extremum_channel(k)
             if c is not None:
                 item = QT.QTableWidgetItem('{}: {}'.format(c, self.controller.channel_names[c]))
                 item.setFlags(QT.Qt.ItemIsEnabled|QT.Qt.ItemIsSelectable)
-                self.table.setItem(i,3, item)
+                self.table.setItem(i, 3, item)
             
             if k>=0:
                 clusters = self.controller.clusters

@@ -7,5 +7,6 @@ export ANACONDA_ROOT='/C/Users/Radu/anaconda3'
 conda activate rippleViewer
 
 python pyRippleViewer/run_xipppy_server.py &
+python pyRippleViewer/run_websockets_listener.py &
 python pyRippleViewer/run_signal_viewer.py &
 python pyRippleViewer/run_triggered_viewer.py

@@ -9,26 +9,46 @@ from ephyviewer.myqt import QT, QT_LIB
 from pyacq.core import ThreadPollInput, RingBuffer
 from pyacq.dsp.triggeraccumulator import TriggerAccumulator, ThreadPollInputUntilPosLimit
 from pyacq.viewers.ephyviewer_mixin import RefreshTimer
-
+from pyacq.devices.ripple import _dtype_stim_packet, _zero_stim_packet
 from pyRippleViewer.tridesclous import labelcodes
 from pyRippleViewer.tridesclous.base import ControllerBase
 from pyRippleViewer.tridesclous.onlinepeaklists import OnlinePeakList, OnlineClusterPeakList
 from pyRippleViewer.tridesclous.onlinewaveformviewer_vispy import RippleWaveformViewer
 from pyRippleViewer.tridesclous.main_tools import (median_mad, mean_std, make_color_dict, get_color_palette)
 
+import pdb
 
 _dtype_peak = [
-    ('index', 'int64'), ('cluster_label', 'int64'), ('channel', 'int64'),
-    ('segment', 'int64'), ('extremum_amplitude', 'float64'), ('timestamp', 'float64'),]
+    ('index', 'int64'),
+    ('cluster_label', 'int64'),
+    ('channel', 'int64'),
+    ('segment', 'int64'),
+    ('extremum_amplitude', 'float64'),
+    ('timestamp', 'float64'),
+    ]
 
 _dtype_peak_zero = np.zeros((1,), dtype=_dtype_peak)
 _dtype_peak_zero['cluster_label'] = labelcodes.LABEL_UNCLASSIFIED
 
 _dtype_cluster = [
-    ('cluster_label', 'int64'), ('cell_label', 'int64'), 
-    ('extremum_channel', 'int64'), ('extremum_amplitude', 'float64'),
-    ('waveform_rms', 'float64'), ('nb_peak', 'int64'), 
-    ('tag', 'U16'), ('annotations', 'U32'), ('color', 'uint32')]
+    ('cluster_label', 'int64'),
+    ('cell_label', 'int64'), 
+    ('extremum_channel', 'int64'),
+    ('extremum_amplitude', 'float64'),
+    ('waveform_rms', 'float64'),
+    ('nb_peak', 'int64'), 
+    ('tag', 'U16'),
+    ('annotations', 'U32'),
+    ('color', 'uint32'),
+    #
+    ('elecCath', '8u1'),
+    ('elecAno', '8u1'),
+    ('amp', 'u4'),
+    ('freq', 'u4'),
+    ('pulseWidth', 'u4'),
+    ('amp_steps', 'u4'),
+    ('stim_res', 'u4')
+    ]
 
 
 class RippleTriggerAccumulator(TriggerAccumulator):
@@ -47,17 +67,20 @@ class RippleTriggerAccumulator(TriggerAccumulator):
     
     _input_specs = {
         'signals' : dict(streamtype = 'signals'), 
-        'events' : dict(streamtype = 'events',  shape = (-1,)), #dtype ='int64',
+        'events' : dict(streamtype = 'events',  shape = (-1,)),
+        'stim_packets' : dict(streamtype = 'events',  shape = (-1,)),
         }
     _output_specs = {}
     
     _default_params = [
         {'name': 'left_sweep', 'type': 'float', 'value': -.1, 'step': 0.1,'suffix': 's', 'siPrefix': True},
         {'name': 'right_sweep', 'type': 'float', 'value': .2, 'step': 0.1, 'suffix': 's', 'siPrefix': True},
-        { 'name' : 'stack_size', 'type' :'int', 'value' : 1000,  'limits':[1,np.inf] },
-            ]
+        {'name': 'stack_size', 'type' :'int', 'value' : 1000,  'limits':[1,np.inf] },
+        ]
     
+    unique_stim_param_names = ['elecCath', 'elecAno', 'amp', 'freq', 'pulseWidth', 'amp_steps', 'stim_res']
     new_chunk = QT.pyqtSignal(int)
+    new_cluster = QT.pyqtSignal()
     
     def __init__(
             self, parent=None, **kargs,
@@ -100,7 +123,8 @@ class RippleTriggerAccumulator(TriggerAccumulator):
     def _initialize(self):
         # set_buffer(self, size=None, double=True, axisorder=None, shmem=None, fill=None)
         bufferParams = {
-            key: self.inputs['signals'].params[key] for key in ['double', 'axisorder', 'fill']}
+            key: self.inputs['signals'].params[key]
+            for key in ['double', 'axisorder', 'fill']}
         bufferParams['size'] = self.inputs['signals'].params['buffer_size']
         # print(f"self.inputs['signals'].params['buffer_size'] = {self.inputs['signals'].params['buffer_size']}")
         if (self.inputs['signals'].params['transfermode'] == 'sharedmem'):
@@ -112,15 +136,20 @@ class RippleTriggerAccumulator(TriggerAccumulator):
             bufferParams['shmem'] = None
         self.inputs['signals'].set_buffer(**bufferParams)
         #
-        self.trig_poller = ThreadPollInput(self.inputs['events'], return_data=True)
+        self.trig_poller = ThreadPollInput(
+            self.inputs['events'], return_data=True)
         self.trig_poller.new_data.connect(self.on_new_trig)
+        #
+        self.stim_packet_poller = ThreadPollInput(
+            self.inputs['stim_packets'], return_data=True)
+        self.stim_packet_poller.new_data.connect(self.on_new_stim_packet)
         
         self.limit_poller = ThreadPollInputUntilPosLimit(self.inputs['signals'])
         self.limit_poller.limit_reached.connect(self.on_limit_reached)
         
         self.stack_lock = Mutex()
         self.wait_thread_list = []
-        self.recreate_stack()
+        self.remake_stack()
         
         self.nb_segment = 1
         self.total_channel = self.nb_channel
@@ -136,30 +165,83 @@ class RippleTriggerAccumulator(TriggerAccumulator):
             item['name'] for item in channel_info
             ]
         self.datasource = DummyDataSource(self.all_channel_names)
-        stim_channels = [
-            item['channel_index']
-            for item in self.inputs['events'].params['channel_info']]
-        self.clusters = np.zeros(shape=(len(stim_channels),), dtype=_dtype_cluster)
-        self.clusters['cluster_label'] = stim_channels
+        ####
+        # stim_channels = [
+        #     item['channel_index']
+        #     for item in self.inputs['events'].params['channel_info']]
+        # self.clusters = np.zeros(shape=(len(stim_channels),), dtype=_dtype_cluster)
+        # self.clusters['cluster_label'] = stim_channels
+        self.clusters = np.zeros(shape=(1,), dtype=_dtype_cluster)
+        self.current_stim_cluster = np.zeros(shape=(1,), dtype=_dtype_cluster)
+        ####
         self._all_peaks_buffer = RingBuffer(
             shape=(self.params['stack_size'], 1), dtype=_dtype_peak,
             fill=_dtype_peak_zero)
         self.some_peaks_index = np.arange(self._all_peaks_buffer.shape[0])
         self.n_spike_for_centroid = 500
         #
+        self.make_centroids()
+
+
+    def make_centroids(self):
         n_left = self.limit1
         n_right = self.limit2
-        #
-        self.centroids_median = np.zeros((self.cluster_labels.size, n_right - n_left, self.nb_channel), dtype=self.source_dtype)
-        self.centroids_mad = np.zeros((self.cluster_labels.size, n_right - n_left, self.nb_channel), dtype=self.source_dtype)
-        self.centroids_mean = np.zeros((self.cluster_labels.size, n_right - n_left, self.nb_channel), dtype=self.source_dtype)
-        self.centroids_std = np.zeros((self.cluster_labels.size, n_right - n_left, self.nb_channel), dtype=self.source_dtype)
+        self.centroids_median = np.zeros(
+            (self.cluster_labels.size, n_right - n_left, self.nb_channel),
+            dtype=self.source_dtype)
+        self.centroids_mad = np.zeros(
+            (self.cluster_labels.size, n_right - n_left, self.nb_channel),
+            dtype=self.source_dtype)
+        self.centroids_mean = np.zeros(
+            (self.cluster_labels.size, n_right - n_left, self.nb_channel),
+            dtype=self.source_dtype)
+        self.centroids_std = np.zeros(
+            (self.cluster_labels.size, n_right - n_left, self.nb_channel),
+            dtype=self.source_dtype)
 
-    def on_new_trig(self, trig_num, trig_indexes):
-        # print(f'on_new_trig {trig_indexes}')
+    def _start(self):
+        self.trig_poller.start()
+        self.stim_packet_poller.start()
+        self.limit_poller.start()
+
+    def _stop(self):
+        self.trig_poller.stop()
+        self.trig_poller.wait()
+        self.stim_packet_poller.stop()
+        self.stim_packet_poller.wait()
+        self.limit_poller.stop()
+        self.limit_poller.wait()
+        
+        for thread in self.wait_thread_list:
+            thread.stop()
+            thread.wait()
+        self.wait_thread_list = []
+
+    def on_new_stim_packet(
+            self, packet_index, stim_packet):
+        print(f'RippleTriggerAccumulator, on_new_stim_packet: {stim_packet}')
+        alreadySeen = stim_packet[self.unique_stim_param_names] in self.clusters[self.unique_stim_param_names]
+        if not alreadySeen:
+            newCluster = np.zeros((1,), dtype=_dtype_cluster)
+            newCluster['cluster_label'] = self.clusters['cluster_label'].max() + 1
+            newCluster[self.unique_stim_param_names] = stim_packet[self.unique_stim_param_names]
+            self.current_stim_cluster = newCluster
+            self.clusters = np.concatenate([self.clusters, newCluster])
+            self.make_centroids()
+            self.refresh_colors()
+            self.new_cluster.emit()
+        else:
+            mask = (self.clusters[self.unique_stim_param_names] == stim_packet[self.unique_stim_param_names])
+            assert mask.sum() == 1
+            self.current_stim_cluster = self.clusters[mask]
+        return
+
+    def on_new_trig(
+            self, trig_num, trig_indexes):
         # if LOGGING:
         #     logger.info(f'on_new_trig: {trig_indexes}')
         # add to all_peaks
+        # print(f'on_new_trig: {trig_indexes}')
         adj_index = (
             trig_indexes[self.events_dtype_field].flatten() / self.nip_sample_period).astype('int64')
         for trig_index in adj_index:
@@ -167,46 +249,28 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         data = np.zeros(trig_indexes.shape, dtype=_dtype_peak)
         data['timestamp'] = trig_indexes[self.events_dtype_field].flatten()
         data['index'] = adj_index
-        data['cluster_label'] = trig_indexes['channel'].flatten().astype('int64')
+        # data['cluster_label'] = trig_indexes['channel'].flatten().astype('int64')
+        data['cluster_label'] = self.current_stim_cluster['cluster_label']
         data['channel'] = 0
         data['segment'] = 0
         self._all_peaks_buffer.new_chunk(data[:, None])
-        # print(f'self._all_peaks_buffer.new_chunk(); self._all_peaks_buffer.index() = {self._all_peaks_buffer.index()}')
                     
     def on_limit_reached(self, limit_index):
         # if LOGGING:
         #     logger.info(f'on limit reached: {limit_index-self.size}:{limit_index}')
-        # arr = self.inputs['signals'].get_data(limit_index-self.size, limit_index)
         arr = self.get_signals_chunk(i_start=limit_index-self.size, i_stop=limit_index)
         if arr is not None:
-            # with self.stack_lock:
-            #     self.stack[self.stack_pos,:,:] = arr['value']
             self.stack.new_chunk(arr.reshape(1, (self.limit2 - self.limit1) * self.nb_channel))
-            # self.new_chunk.emit(self.stack.index())
-            #
-            # print(f"on_limit_reached,\nself.stack[self.stack_pos,:,:] = {self.stack[self.stack_pos,:,:]}\nself.total_trig = {self.total_trig}")
-            # self.stack_pos += 1
-            # self.stack_pos = self.stack_pos % self.params['stack_size']
-            # self.total_trig += 1
-            # print(f'self.stack.new_chunk(); self.total_trig = {self.total_trig}')
-            # self.new_chunk.emit(self.total_trig)
 
-    def recreate_stack(self):
+    def remake_stack(self):
         self.limit1 = l1 = int(self.params['left_sweep'] * self.sample_rate)
         self.limit2 = l2 = int(self.params['right_sweep'] * self.sample_rate)
         self.size = l2 - l1
         
         self.t_vect = np.arange(l2-l1)/self.sample_rate + self.params['left_sweep']
-        '''
-        with self.stack_lock:
-            self.stack = np.zeros(
-                (self.params['stack_size'], l2-l1, self.nb_channel),
-                dtype = 'float64')'''
         self.stack = RingBuffer(
             shape=(self.params['stack_size'], (l2-l1) * self.nb_channel),
             dtype='float64')
-        # self.stack_pos = 0
-        # self.total_trig = 0
         self.limit_poller.reset()
 
     def get_geometry(self):
@@ -311,7 +375,6 @@ class RippleTriggerAccumulator(TriggerAccumulator):
             # print(f'get_some_waveforms( peak_sample_indexes = {peak_sample_indexes}')
             assert peak_sample_indexes is not None, 'Provide sample_indexes'
             peaks_index = np.flatnonzero(np.isin(self.all_peaks['index'], peak_sample_indexes))
-        # import pdb; pdb.set_trace()
         # peaks_index = self.params['stack_size'] - peaks_index - 1
         # print(f'get_some_waveforms( peaks_index = {peaks_index}')
         '''
@@ -482,6 +545,8 @@ class RippleCatalogueController(ControllerBase):
 
         self.init_plot_attributes()
 
+        self.dataio.new_cluster.connect(self.init_plot_attributes)
+
     def init_plot_attributes(self):
         self.cluster_visible = {k: True for i, k in enumerate(self.cluster_labels)}
         self.do_cluster_count()
@@ -516,6 +581,7 @@ class RippleCatalogueController(ControllerBase):
     @property
     def spikes(self):
         return self.dataio.all_peaks.flatten()
+    
     @property
     def all_peaks(self):
         return self.dataio.all_peaks.flatten()
@@ -678,6 +744,8 @@ class RippleTriggeredWindow(QT.QMainWindow):
         self.addDockWidget(QT.Qt.RightDockWidgetArea, docks['waveformviewer'])
         #self.tabifyDockWidget(docks['ndscatter'], docks['waveformviewer'])
 
+        self.dataio.new_cluster.connect(self.waveformviewer.initialize_plot)
+
         '''
         docks['waveformhistviewer'] = QT.QDockWidget('waveformhistviewer',self)
         docks['waveformhistviewer'].setWidget(self.waveformhistviewer)
@@ -730,7 +798,7 @@ class RippleTriggeredWindow(QT.QMainWindow):
         self.toolbar.addAction(self.act_refresh)
 
     def warn(self, title, text):
-        mb = QT.QMessageBox.warning(self, title,text, QT.QMessageBox.Ok ,  QT.QMessageBox.NoButton)
+        mb = QT.QMessageBox.warning(self, title,text, QT.QMessageBox.Ok,  QT.QMessageBox.NoButton)
     
     def refresh_with_reload(self):
         self.controller.reload_data()

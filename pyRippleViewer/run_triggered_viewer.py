@@ -20,29 +20,31 @@ usage = """Usage:
     python pyacq_ripple_host.py [address]
 
 # Examples:
-python host_server.py tcp://10.0.0.100:5000
-python host_server.py tcp://10.0.0.100:*
+python host_server.py
+python host_server.py
 """
 
-if len(sys.argv) == 2:
-    rpc_addr = sys.argv[1]
-else:
-    rpc_addr = 'tcp://127.0.0.1:5001'
-    
-if not re.match(r'tcp://(\*|([0-9\.]+)):(\*|[0-9]+)', rpc_addr):
-    sys.stderr.write(usage)
-    sys.exit(-1)
+xipppy_rpc_addr = 'tcp://127.0.0.1:5001'
+websockets_rpc_addr = 'tcp://127.0.0.2:5001'
+
 
 def main():
     # Start Qt application
     app = pg.mkQApp()
 
     # In host/process/thread 2: (you must communicate rpc_addr manually)
-    client = pyacq.RPCClient.get_client(rpc_addr)
+    xipppy_client = pyacq.RPCClient.get_client(xipppy_rpc_addr)
 
     # Get a proxy to published object; use this (almost) exactly as you
     # would a local object:
-    txBuffer = client['nip0']
+    txBuffer = xipppy_client['nip0']
+
+    # In host/process/thread 2: (you must communicate rpc_addr manually)
+    websockets_client = pyacq.RPCClient.get_client(websockets_rpc_addr)
+
+    # Get a proxy to published object; use this (almost) exactly as you
+    # would a local object:
+    stimPacketBuffer = websockets_client['stimPacketRx']
 
     signalTypeToPlot = 'hifreq' # ['hi-res', 'hifreq', 'stim']
 
@@ -51,10 +53,12 @@ def main():
         'channels': [idx for idx, item in enumerate(channel_info)],
         'geometry': [[0, 100 * idx] for idx, item in enumerate(channel_info)]
         }
+
     triggerAcc = RippleTriggerAccumulator()
     triggerAcc.configure(channel_group=channel_group)
     triggerAcc.inputs['signals'].connect(txBuffer.outputs[signalTypeToPlot])
     triggerAcc.inputs['events'].connect(txBuffer.outputs['stim'])
+    triggerAcc.inputs['stim_packets'].connect(stimPacketBuffer.outputs['stim_packets'])
 
     triggerAcc.initialize()
     win = RippleTriggeredWindow(triggerAcc)
