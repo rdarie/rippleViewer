@@ -82,10 +82,13 @@ class WaveformViewerBase(WidgetBase):
     def on_params_changed(self, params, changes):
         for param, change, data in changes:
             if change != 'value': continue
-            if param.name() == 'flip_bottom_up':
+            # if param.name() == 'flip_bottom_up':
+            #     self.initialize_plot()
+            if param.name() == 'individual_spikes_num':
                 self.initialize_plot()
-            elif param.name() == 'individual_spikes_num':
-                self.initialize_plot()
+            if param.name() == 'debounce_sec':
+                print(f"param_change_data = {data}")
+                self.controller.dataio.set_debounce(data)
         self.clear_plots()
 
     def initialize_plot(self):
@@ -153,7 +156,8 @@ class WaveformViewerBase(WidgetBase):
                 parent=self.viewbox1.scene)
             self.channel_num_labels.append(itemtxt)
         #
-        self.thresh_line = scene.InfiniteLine(pos=None, color=self.params['vline_color'].getRgbF())
+        self.thresh_line = scene.InfiniteLine(
+            pos=None, color=self.params['vline_color'].getRgbF())
         self.thresh_line.visible = False
         
         self._common_channels_flat = self.controller.channels
@@ -206,14 +210,15 @@ class WaveformViewerBase(WidgetBase):
             # self.curves_mad_fill.append(fill)
             curve_p2 = scene.Line(pos=None, width=1, parent=self.viewbox2.scene)
             self.curves_mad_plot2.append(curve_p2)
-        if self.mode=='flatten':
+        if self.mode == 'flatten':
             self.grid.add_widget(widget=self.plot2, row=1, col=0)
             self.factor_y = 1.
             for idx, k in enumerate(cluster_labels):
                 self.curves_mad_top[idx].visible = True
                 self.curves_mad_bottom[idx].visible = True
                 self.curves_mad_plot2[idx].visible = True
-        elif self.mode=='geometry':
+            self.viewbox1.camera.link(self.viewbox2.camera, axis="x")
+        elif self.mode == 'geometry':
             for idx, k in enumerate(cluster_labels):
                 self.curves_mad_top[idx].visible = False
                 self.curves_mad_bottom[idx].visible = False
@@ -235,8 +240,8 @@ class WaveformViewerBase(WidgetBase):
                     x, y = channel_group['geometry'][chan]
                     self.arr_geometry.append([x, y])
                 self.arr_geometry = np.array(self.arr_geometry, dtype='float64')
-                if self.params['flip_bottom_up']:
-                    self.arr_geometry[:, 1] *= -1.
+                # if self.params['flip_bottom_up']:
+                #     self.arr_geometry[:, 1] *= -1.
                 xpos = self.arr_geometry[:,0]
                 ypos = self.arr_geometry[:,1]
                 if np.unique(xpos).size>1:
@@ -250,7 +255,7 @@ class WaveformViewerBase(WidgetBase):
                 self.factor_y = .3
                 if self.delta_x > 0.:
                     #~ espx = self.delta_x/2. *.95
-                    espx = self.delta_x/2.5
+                    espx = self.delta_x / 2.5
                 else:
                     espx = .5
                 for i, chan in enumerate(channel_group['channels']):
@@ -265,7 +270,7 @@ class WaveformViewerBase(WidgetBase):
         
         self.sceneCanvas.ygain_zoom.connect(self.gain_zoom)
         self.sceneCanvas.doubleclicked.connect(self.open_settings)
-        #~ self.viewBox.xsize_zoom.connect(self.xsize_zoom)    
+        #~ self.viewBox.xsize_zoom.connect(self.xsize_zoom)
 
     def _refresh(self, keep_range=False):
         #
@@ -293,8 +298,9 @@ class WaveformViewerBase(WidgetBase):
 
     def refresh_mode_flatten(self, cluster_visible, keep_range):
         if LOGGING: logger.info(f'Starting _refresh_mode_flatten...')
+        #
+        rect1 = self.viewbox1.camera.get_state()['rect']
         if self._x_range is not None and keep_range:
-            rect1 = self.viewbox1.camera.get_state()['rect']
             self._x_range = (rect1.left, rect1.right)
             self._y1_range = (rect1.bottom, rect1.top)
             rect2 = self.viewbox2.camera.get_state()['rect']
@@ -304,13 +310,13 @@ class WaveformViewerBase(WidgetBase):
             return
 
         #waveforms
-        if self.params['metrics']=='median/mad':
+        if self.params['summary_statistics']=='median/mad':
             key1, key2 = 'median', 'mad'
             zero_centroids = False
-        elif self.params['metrics']=='mean/std':
+        elif self.params['summary_statistics']=='mean/std':
             key1, key2 = 'mean', 'std'
             zero_centroids = False
-        elif self.params['metrics']=='none':
+        elif self.params['summary_statistics']=='none':
             key1, key2 = 'mean', 'std'
             zero_centroids = True
 
@@ -343,13 +349,14 @@ class WaveformViewerBase(WidgetBase):
                 self.vline_list1[i].visible = False
                 self.vline_list2[i].visible = False
 
-        if self.params['display_threshold']:
+        '''if self.params['display_threshold']:
             thresh = self.controller.get_threshold()
             self.thresh_line.set_data(pos=thresh, color=self.params['vline_color'].getRgbF())
             self.thresh_line.visible = True
         else:
-            self.thresh_line.visible = False
-        
+            self.thresh_line.visible = False'''
+        self.thresh_line.visible = False
+
         xvect = None
         for idx, (k, v) in enumerate(cluster_visible.items()):
             if not v:
@@ -401,15 +408,7 @@ class WaveformViewerBase(WidgetBase):
                     xy = np.concatenate((xvect[:, None], mad[:, None],), axis=1)
                     self.curves_mad_plot2[idx].set_data(pos=xy, color=color, width=1)
                     self.curves_mad_plot2[idx].visible = True
-        #
-        if self.params['show_channel_num']:
-            for i, itemtext in enumerate(self.channel_num_labels):
-                itemtext.pos = (width*i, 0)
-                itemtext.visible = True
-        else:
-            for itemtext in self.channel_num_labels:
-                itemtext.visible = False
-        if self._x_range is None or not keep_range :
+        if self._x_range is None or not keep_range:
             if xvect.size > 0:
                 self._x_range = xvect[0], xvect[-1]
                 self._y1_range = self.wf_min * 1.1, self.wf_max * 1.1
@@ -419,6 +418,14 @@ class WaveformViewerBase(WidgetBase):
             self.viewbox2.camera.set_range(
                 x=self._x_range, y=self._y2_range, margin=0.)
         if LOGGING: logger.info(f'Finished _refresh_mode_flatten...')
+        #
+        if self.params['show_channel_num']:
+            for i, itemtext in enumerate(self.channel_num_labels):
+                itemtext.pos = (width * i - n_left, rect1.top * 0.9)
+                itemtext.visible = True
+        else:
+            for itemtext in self.channel_num_labels:
+                itemtext.visible = False
 
     def refresh_mode_geometry(self, cluster_visible, keep_range):
         if LOGGING: logger.info(f'Starting _refresh_mode_geometry...')
@@ -428,7 +435,7 @@ class WaveformViewerBase(WidgetBase):
             self._y1_range = (rect.bottom, rect.top)
 
         for i, c in enumerate(self.controller.channels):
-            if i%2==1:
+            if i%2 == 1:
                 self.region_dict1[c].visible = False
                 self.region_dict2[c].visible = False
             self.vline_list1[i].visible = False
@@ -445,13 +452,13 @@ class WaveformViewerBase(WidgetBase):
         if width != self.xvect.shape[1]:
             self.initialize_plot()
 
-        if self.params['metrics']=='median/mad':
+        if self.params['summary_statistics']=='median/mad':
             key1, key2 = 'median', 'mad'
             zero_centroids = False
-        elif self.params['metrics']=='mean/std':
+        elif self.params['summary_statistics']=='mean/std':
             key1, key2 = 'mean', 'std'
             zero_centroids = False
-        elif self.params['metrics']=='none':
+        elif self.params['summary_statistics']=='none':
             key1, key2 = 'mean', 'std'
             zero_centroids = True
 
@@ -475,7 +482,7 @@ class WaveformViewerBase(WidgetBase):
             if ds_ratio > 1:
                 wf = wf[::ds_ratio, :]
 
-            ypos = self.arr_geometry[chans,1]
+            ypos = self.arr_geometry[chans, 1]
             
             wf = wf * self.factor_y * self.delta_y + ypos[None, :]
             #wf[0,:] = np.nan
@@ -494,13 +501,14 @@ class WaveformViewerBase(WidgetBase):
                 self.curves_geometry[idx].visible = False
             else:
                 xy=np.concatenate((xvect.flatten()[:, None], wf.T.flatten()[:, None]), axis=1)
-                self.curves_geometry[idx].set_data(pos=xy,color=color, width=2, connect=connect.T.flatten())
+                self.curves_geometry[idx].set_data(
+                    pos=xy,color=color, width=2, connect=connect.T.flatten())
                 self.curves_geometry[idx].visible = True
             
         if self.params['show_channel_num']:
             for i, itemtext in enumerate(self.channel_num_labels):
                 x, y = self.arr_geometry[i, : ]
-                itemtext.pos = (x, y)
+                itemtext.pos = (x, y + self.delta_y / 2)
                 itemtext.visible = True
         else:
             for itemtext in self.channel_num_labels:
@@ -624,16 +632,17 @@ class RippleWaveformViewer(WaveformViewerBase):
       * **display_threshold**: what could it be ?
     """
     _params = [
-        {'name': 'max_num_points', 'type' :'int', 'value' : 16000, 'limits':[2000, np.inf]},
         {'name': 'plot_individual_spikes', 'type': 'list', 'value': 'last', 'values': ['last', 'selected', 'none']},
         {'name': 'individual_spikes_num', 'type' :'int', 'value' : 5, 'limits':[1, np.inf]},
         {'name': 'show_only_selected_cluster', 'type': 'bool', 'value': False},
         {'name': 'plot_limit_for_flatten', 'type': 'bool', 'value': True},
-        {'name': 'metrics', 'type': 'list', 'value': 'none', 'values': ['median/mad', 'none'] },
+        {'name': 'summary_statistics', 'type': 'list', 'value': 'none', 'values': ['median/mad', 'none'] },
         {'name': 'fillbetween', 'type': 'bool', 'value': True},
         {'name': 'show_channel_num', 'type': 'bool', 'value': True},
-        {'name': 'flip_bottom_up', 'type': 'bool', 'value': False},
-        {'name': 'display_threshold', 'type': 'bool', 'value' : False},
         {'name': 'vline_color', 'type': 'color', 'value': '#FFFFFFAA'},
-        {'name': 'sparse_display', 'type': 'bool', 'value' : False },
+        {'name': 'max_num_points', 'type' :'int', 'value' : 16000, 'limits':[2000, np.inf]},
+        {'name': 'debounce_sec', 'type' :'float', 'value' : 50e-3, 'limits':[10e-3, np.inf]},
+        # {'name': 'flip_bottom_up', 'type': 'bool', 'value': False},
+        # {'name': 'display_threshold', 'type': 'bool', 'value' : False},
+        # {'name': 'sparse_display', 'type': 'bool', 'value' : False },
         ]

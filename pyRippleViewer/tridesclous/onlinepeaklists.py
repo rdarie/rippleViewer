@@ -8,15 +8,33 @@ from pyRippleViewer.tridesclous.base import WidgetBase
 from pyRippleViewer.tridesclous.gui_tools import ParamDialog, open_dialog_methods
 from pyRippleViewer.tridesclous import gui_params
 
+from pyacq.devices.ripple import binaryToElecList
+import pdb
+
+checkboxLookup = {
+    False: QT.Qt.Unchecked,
+    True: QT.Qt.Checked}
+
+pretty_names = {
+    'cluster_label': 'stim. pattern ID',
+    'elecCath': 'cathode(s)',
+    'elecAno': 'anode(s)',
+    'pulseWidth': 'pulse width (usec)',
+    'amp': 'stim. amplitude (uA)',
+    'freq': 'stim. frequency (Hz)',
+    'time': 'time (sec)'
+    }
 
 class OnlinePeakModel(QT.QAbstractItemModel):
-    def __init__(self, parent =None, controller=None):
+    labels_in_table = ['time', 'cluster_label']
+
+    def __init__(self, parent = None, controller=None):
         QT.QAbstractItemModel.__init__(self,parent)
         self.controller = controller
         self.sample_rate = self.controller.dataio.sample_rate
         self.refresh_colors()
     
-    def columnCount(self , parentIndex):
+    def columnCount(self, parentIndex):
         return 2
         
     def rowCount(self, parentIndex):
@@ -73,7 +91,8 @@ class OnlinePeakModel(QT.QAbstractItemModel):
             #     return '{}'.format(peak_pos)
             else:
                 return None
-        elif role == QT.Qt.DecorationRole :
+    
+        elif role == QT.Qt.DecorationRole:
             if col != 0: return None
             if peak_label in self.icons:
                 return self.icons[peak_label]
@@ -89,14 +108,15 @@ class OnlinePeakModel(QT.QAbstractItemModel):
 
     def headerData(self, section, orientation, role):
         if orientation == QT.Qt.Horizontal and role == QT.Qt.DisplayRole:
-            return  ['time', 'cluster_label'][section]
+            # return self.labels_in_table[section]
+            return pretty_names.get(self.labels_in_table[section], self.labels_in_table[section])
         return
     
     def refresh_colors(self):
         self.icons = { }
         for k in self.controller.qcolors:
             color = self.controller.qcolors.get(k, QT.QColor( 'white'))
-            pix = QT.QPixmap(10,10 )
+            pix = QT.QPixmap(10, 10)
             pix.fill(color)
             self.icons[k] = QT.QIcon(pix)
         
@@ -124,6 +144,9 @@ class OnlinePeakList(WidgetBase):
       * When you select one spike, this will auto zoom on **Trace View**,  auto select
         the appriopriate segment and hilight the point on **ND Scatetr**. And vice versa.
     """
+
+    labels_in_table = []
+
     def __init__(self, controller=None, parent=None):
         WidgetBase.__init__(self, parent=parent, controller=controller)
         
@@ -135,7 +158,8 @@ class OnlinePeakList(WidgetBase):
         
         self.tree = QT.QTreeView(
             minimumWidth = 100, uniformRowHeights = True,
-            selectionMode= QT.QAbstractItemView.ExtendedSelection, selectionBehavior = QT.QTreeView.SelectRows,
+            selectionMode = QT.QAbstractItemView.ExtendedSelection,
+            selectionBehavior = QT.QTreeView.SelectRows,
             contextMenuPolicy = QT.Qt.CustomContextMenu,)
         
         self.layout.addWidget(self.tree)
@@ -149,7 +173,9 @@ class OnlinePeakList(WidgetBase):
         #~ for i in range(self.model.columnCount(None)):
             #~ print(i)
             #~ self.tree.resizeColumnToContents(i)
-        self.tree.setColumnWidth(0, 80)
+        self.tree.setColumnWidth(0, 120)
+        # print('\n'.join(dir(self.tree)))
+        # pdb.set_trace()
         
         self.refresh()
     
@@ -189,7 +215,7 @@ class OnlinePeakList(WidgetBase):
                 index = self.tree.model().index(r,c,QT.QModelIndex())
                 ir = QT.QItemSelectionRange( index )
                 itemsSelection.append(ir)
-        self.tree.selectionModel().select(itemsSelection , flags)
+        self.tree.selectionModel().select(itemsSelection, flags)
 
         # set selection visible
         if len(row_selected)>=1:
@@ -205,7 +231,8 @@ class OnlineClusterBaseList(WidgetBase):
     """
     
     sort_by_names = ['label', 'channel', 'amplitude', 'nb_peak']
-    labels_in_table = ['cluster_label', 'show/hide', 'nb_peaks', 'channel']
+    labels_in_table = [
+        'cluster_label', 'show/hide', 'elecCath', 'elecAno', 'pulseWidth', 'amp', 'freq']
 
     def __init__(self, controller=None, parent=None):
         WidgetBase.__init__(self, parent=parent, controller=controller)
@@ -238,7 +265,7 @@ class OnlineClusterBaseList(WidgetBase):
         self.table.itemChanged.disconnect(self.on_item_changed)
         
         self.table.clear()
-        labels = self.labels_in_table
+        labels = [pretty_names.get(label, label) for label in self.labels_in_table]
 
         self.table.setColumnCount(len(labels))
         self.table.setHorizontalHeaderLabels(labels)
@@ -269,7 +296,7 @@ class OnlineClusterBaseList(WidgetBase):
         self.table.setRowCount(len(cluster_labels))
         
         for i, k in enumerate(cluster_labels):
-            color = self.controller.qcolors.get(k, QT.QColor( 'white'))
+            color = self.controller.qcolors.get(k, QT.QColor('white'))
             pix = QT.QPixmap(16, 16)
             pix.fill(color)
             icon = QT.QIcon(pix)
@@ -279,41 +306,55 @@ class OnlineClusterBaseList(WidgetBase):
             else:
                 name = '{}'.format(k)
 
-            item = QT.QTableWidgetItem(name)
-            item.setFlags(QT.Qt.ItemIsEnabled|QT.Qt.ItemIsSelectable)
-            self.table.setItem(i, 0, item)
-            item.setIcon(icon)
-            
-            item = QT.QTableWidgetItem('')
-            item.setFlags(QT.Qt.ItemIsEnabled|QT.Qt.ItemIsSelectable|QT.Qt.ItemIsUserCheckable)
-            
-            item.setCheckState({ False: QT.Qt.Unchecked, True : QT.Qt.Checked}[self.controller.cluster_visible.get(k, False)])
-            self.table.setItem(i, 1, item)
-            item.label = k
-
-            item = QT.QTableWidgetItem('{}'.format(self.controller.cluster_count.get(k, 0)))
-            item.setFlags(QT.Qt.ItemIsEnabled|QT.Qt.ItemIsSelectable)
-            self.table.setItem(i, 2, item)
-            
-            c = self.controller.get_extremum_channel(k)
-            if c is not None:
-                item = QT.QTableWidgetItem('{}: {}'.format(c, self.controller.channel_names[c]))
+            if 'cluster_label' in self.labels_in_table:
+                item_index = self.labels_in_table.index('cluster_label')
+                item = QT.QTableWidgetItem(name)
                 item.setFlags(QT.Qt.ItemIsEnabled|QT.Qt.ItemIsSelectable)
-                self.table.setItem(i, 3, item)
+                self.table.setItem(i, item_index, item)
+                item.setIcon(icon)
             
-            if k>=0:
+            if 'show/hide' in self.labels_in_table:
+                item_index = self.labels_in_table.index('show/hide')
+                item = QT.QTableWidgetItem('')
+                item.setFlags(QT.Qt.ItemIsEnabled|QT.Qt.ItemIsSelectable|QT.Qt.ItemIsUserCheckable)
+                
+                item.setCheckState(checkboxLookup[self.controller.cluster_visible.get(k, False)])
+                self.table.setItem(i, item_index, item)
+                item.label = k
+
+            if 'nb_peaks' in self.labels_in_table:
+                item_index = self.labels_in_table.index('nb_peaks')
+                item = QT.QTableWidgetItem('{}'.format(self.controller.cluster_count.get(k, 0)))
+                item.setFlags(QT.Qt.ItemIsEnabled|QT.Qt.ItemIsSelectable)
+                self.table.setItem(i, item_index, item)
+            
+            if 'channel' in self.labels_in_table:
+                item_index = self.labels_in_table.index('channel')
+                extremum_channel = self.controller.get_extremum_channel(k)
+                if extremum_channel is not None:
+                    item = QT.QTableWidgetItem('{}: {}'.format(
+                        extremum_channel, self.controller.channel_names[extremum_channel]))
+                    item.setFlags(QT.Qt.ItemIsEnabled|QT.Qt.ItemIsSelectable)
+                    self.table.setItem(i, item_index, item)
+            
+            if k >= 0:
                 clusters = self.controller.clusters
                 ## ind = np.searchsorted(clusters['cluster_label'], k) ## wrong because searchsortedmust be ordered
                 ind = np.nonzero(clusters['cluster_label'] == k)[0][0]
                 
-                for c, attr in enumerate(['cell_label', 'tag', 'annotations']):
+                for item_index, attr in enumerate(self.labels_in_table):
+                    if attr in ['cluster_label', 'show/hide', 'nb_peaks', 'channel']:
+                        continue
                     value = clusters[attr][ind]
-                    item = QT.QTableWidgetItem('{}'.format(value))
+                    if attr in ['elecCath', 'elecAno']:
+                        itemLabel = f'{binaryToElecList(value)}'
+                    else:
+                        itemLabel = f'{value}'
+                    item = QT.QTableWidgetItem(itemLabel)
                     item.setFlags(QT.Qt.ItemIsEnabled|QT.Qt.ItemIsSelectable)
-                    self.table.setItem(i,4+c, item)
+                    self.table.setItem(i, item_index, item)
 
-            
-        for i in range(5):
+        for i in range(len(self.labels_in_table)):
             self.table.resizeColumnToContents(i)
         self.table.itemChanged.connect(self.on_item_changed)        
 

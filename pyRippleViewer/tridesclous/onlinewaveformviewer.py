@@ -102,9 +102,9 @@ class WaveformViewerBase(WidgetBase):
     def on_params_changed(self, params, changes):
         for param, change, data in changes:
             if change != 'value': continue
-            if param.name() == 'flip_bottom_up':
-                self.initialize_plot()
-            elif param.name() == 'individual_spikes_num':
+            # if param.name() == 'flip_bottom_up':
+            #     self.initialize_plot()
+            if param.name() == 'individual_spikes_num':
                 self.initialize_plot()
         self.clear_plots()
 
@@ -242,8 +242,8 @@ class WaveformViewerBase(WidgetBase):
                     self.arr_geometry.append([x, y])
                 self.arr_geometry = np.array(self.arr_geometry, dtype='float64')
                 
-                if self.params['flip_bottom_up']:
-                    self.arr_geometry[:, 1] *= -1.
+                # if self.params['flip_bottom_up']:
+                #     self.arr_geometry[:, 1] *= -1.
                 
                 xpos = self.arr_geometry[:,0]
                 ypos = self.arr_geometry[:,1]
@@ -338,13 +338,13 @@ class WaveformViewerBase(WidgetBase):
             return
 
         #waveforms
-        if self.params['metrics']=='median/mad':
+        if self.params['summary_statistics']=='median/mad':
             key1, key2 = 'median', 'mad'
             zero_centroids = False
-        elif self.params['metrics']=='mean/std':
+        elif self.params['summary_statistics']=='mean/std':
             key1, key2 = 'mean', 'std'
             zero_centroids = False
-        elif self.params['metrics']=='none':
+        elif self.params['summary_statistics']=='none':
             key1, key2 = 'mean', 'std'
             zero_centroids = True
 
@@ -366,10 +366,10 @@ class WaveformViewerBase(WidgetBase):
             self.addSpan(self.plot2, width, common_channels, n_left)
             self.is_span_added = True
 
-        if self.params['display_threshold']:
+        '''if self.params['display_threshold']:
             thresh = self.controller.get_threshold()
             thresh_line = pg.InfiniteLine(pos=thresh, angle=0, movable=False, pen = pg.mkPen('w'))
-            self.plot1.addItem(thresh_line)
+            self.plot1.addItem(thresh_line)'''
         
         xvect = None
         for idx, (k, v) in enumerate(cluster_visible.items()):
@@ -452,13 +452,13 @@ class WaveformViewerBase(WidgetBase):
         if width != self.xvect.shape[1]:
             self.initialize_plot()
 
-        if self.params['metrics']=='median/mad':
+        if self.params['summary_statistics']=='median/mad':
             key1, key2 = 'median', 'mad'
             zero_centroids = False
-        elif self.params['metrics']=='mean/std':
+        elif self.params['summary_statistics']=='mean/std':
             key1, key2 = 'mean', 'std'
             zero_centroids = False
-        elif self.params['metrics']=='none':
+        elif self.params['summary_statistics']=='none':
             key1, key2 = 'mean', 'std'
             zero_centroids = True
 
@@ -627,12 +627,12 @@ class WaveformViewer(WaveformViewerBase):
         {'name': 'plot_selected_spike', 'type': 'bool', 'value': False },
         {'name': 'show_only_selected_cluster', 'type': 'bool', 'value': False},
         {'name': 'plot_limit_for_flatten', 'type': 'bool', 'value': True },
-        {'name': 'metrics', 'type': 'list', 'values': ['median/mad', 'mean/std', 'none'] },
+        {'name': 'summary_statistics', 'type': 'list', 'values': ['median/mad', 'mean/std', 'none'] },
         {'name': 'fillbetween', 'type': 'bool', 'value': True },
         {'name': 'show_channel_num', 'type': 'bool', 'value': False},
-        {'name': 'flip_bottom_up', 'type': 'bool', 'value': False},
-        {'name': 'display_threshold', 'type': 'bool', 'value' : True },
-        {'name': 'sparse_display', 'type': 'bool', 'value' : True },
+        # {'name': 'flip_bottom_up', 'type': 'bool', 'value': False},
+        # {'name': 'display_threshold', 'type': 'bool', 'value' : True },
+        # {'name': 'sparse_display', 'type': 'bool', 'value' : True },
         ]
         
 
@@ -644,12 +644,12 @@ class PeelerWaveformViewer(WaveformViewerBase):
         {'name': 'plot_selected_spike', 'type': 'bool', 'value': True },
         {'name': 'show_only_selected_cluster', 'type': 'bool', 'value': True},
         {'name': 'plot_limit_for_flatten', 'type': 'bool', 'value': True },
-        {'name': 'metrics', 'type': 'list', 'values': ['median/mad'] },
+        {'name': 'summary_statistics', 'type': 'list', 'values': ['median/mad'] },
         {'name': 'fillbetween', 'type': 'bool', 'value': True },
         {'name': 'show_channel_num', 'type': 'bool', 'value': False},
-        {'name': 'flip_bottom_up', 'type': 'bool', 'value': False},
-        {'name': 'display_threshold', 'type': 'bool', 'value' : True },
-        {'name': 'sparse_display', 'type': 'bool', 'value' : True },
+        # {'name': 'flip_bottom_up', 'type': 'bool', 'value': False},
+        # {'name': 'display_threshold', 'type': 'bool', 'value' : True },
+        # {'name': 'sparse_display', 'type': 'bool', 'value' : True },
         ]
 
 
@@ -695,11 +695,11 @@ class RippleWaveformViewer(WaveformViewerBase):
         {'name': 'individual_spikes_num', 'type' :'int', 'value' : 5, 'limits':[1, np.inf]},
         {'name': 'show_only_selected_cluster', 'type': 'bool', 'value': False},
         {'name': 'plot_limit_for_flatten', 'type': 'bool', 'value': True},
-        {'name': 'metrics', 'type': 'list', 'value': 'none', 'values': ['median/mad', 'none'] },
+        {'name': 'summary_statistics', 'type': 'list', 'value': 'none', 'values': ['median/mad', 'none'] },
         {'name': 'fillbetween', 'type': 'bool', 'value': True},
         {'name': 'show_channel_num', 'type': 'bool', 'value': True},
-        {'name': 'flip_bottom_up', 'type': 'bool', 'value': False},
-        {'name': 'display_threshold', 'type': 'bool', 'value' : False},
-        {'name': 'sparse_display', 'type': 'bool', 'value' : False },
+        # {'name': 'flip_bottom_up', 'type': 'bool', 'value': False},
+        # {'name': 'display_threshold', 'type': 'bool', 'value' : False},
+        # {'name': 'sparse_display', 'type': 'bool', 'value' : False },
         {'name': 'line_width', 'type': 'float', 'value': 1., 'limits': (0, np.inf)},
         ]

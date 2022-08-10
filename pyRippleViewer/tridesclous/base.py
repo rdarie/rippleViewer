@@ -90,6 +90,8 @@ class WidgetBase(QT.QWidget):
     cluster_tag_changed = QT.pyqtSignal()
     
     _params = None
+
+    labels_in_table = []
     
     def __init__(self, parent = None, controller=None):
         QT.QWidget.__init__(self, parent)
@@ -104,12 +106,13 @@ class WidgetBase(QT.QWidget):
         raise(NotImplementedError)
 
     def create_settings(self):
-        self.params = pg.parametertree.Parameter.create( name='settings', type='group', children=self._params)
+        self.params = pg.parametertree.Parameter.create(
+            name='settings', type='group', children=self._params)
         
         self.tree_params = pg.parametertree.ParameterTree(parent=self)
         self.tree_params.header().hide()
         self.tree_params.setParameters(self.params, showTop=True)
-        self.tree_params.setWindowTitle(u'Options for waveforms hist viewer')
+        self.tree_params.setWindowTitle(u'Options for waveforms viewer')
         self.tree_params.setWindowFlags(QT.Qt.Window)
         
         self.params.sigTreeStateChanged.connect(self.on_params_changed)

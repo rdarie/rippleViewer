@@ -86,10 +86,14 @@ class RippleTriggerAccumulator(TriggerAccumulator):
             self, parent=None, **kargs,
             ):
         TriggerAccumulator.__init__(self, parent=parent, **kargs)
+        # only capture triggers that are at least one sample apart
+        # we initialize it to 1, to avoid double detecting instances of, e.g., stim on multiple channels
+        # triggering once per channel
+        self.debounce_timestamps = 1
     
     def _configure(
             self, max_stack_size=2000, max_xsize=2.,
-            channel_group=None):
+            channel_group=None, debounce=None):
         """
         Arguments
         ---------------
@@ -102,6 +106,11 @@ class RippleTriggerAccumulator(TriggerAccumulator):
             In case of complex dtype (ex : dtype = [('index', 'int64'), ('label', 'S12), ) ] you can precise which
             filed is the index.
         """
+        if debounce is not None:
+            # self.debounce_timestamps is in NIP samples (30 kHz)
+            # debounce is in seconds
+            self.debounce_timestamps = max(1, int(30e3 * debounce))
+        #
         self.params.sigTreeStateChanged.connect(
             self.on_params_change)
         self.max_stack_size = max_stack_size
@@ -110,6 +119,11 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         self.max_xsize = max_xsize
         self.channel_group = channel_group
         self.channel_groups = {0: channel_group}
+
+    def set_debounce(self, new_debounce):
+        # self.debounce_timestamps is in NIP samples (30 kHz)
+        # new_debounce is in seconds
+        self.debounce_timestamps = max(1, int(30e3 * new_debounce))
 
     def after_input_connect(self, inputname):
         if inputname == 'signals':
@@ -150,7 +164,8 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         self.stack_lock = Mutex()
         self.wait_thread_list = []
         self.remake_stack()
-        
+        self.last_trigger_timestamp = -1
+
         self.nb_segment = 1
         self.total_channel = self.nb_channel
         self.source_dtype = np.dtype('float64')
@@ -181,7 +196,6 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         self.n_spike_for_centroid = 500
         #
         self.make_centroids()
-
 
     def make_centroids(self):
         n_left = self.limit1
@@ -219,7 +233,7 @@ class RippleTriggerAccumulator(TriggerAccumulator):
 
     def on_new_stim_packet(
             self, packet_index, stim_packet):
-        print(f'RippleTriggerAccumulator, on_new_stim_packet: {stim_packet}')
+        # print(f'RippleTriggerAccumulator, on_new_stim_packet: {stim_packet}')
         alreadySeen = stim_packet[self.unique_stim_param_names] in self.clusters[self.unique_stim_param_names]
         if not alreadySeen:
             newCluster = np.zeros((1,), dtype=_dtype_cluster)
@@ -241,13 +255,46 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         # if LOGGING:
         #     logger.info(f'on_new_trig: {trig_indexes}')
         # add to all_peaks
-        # print(f'on_new_trig: {trig_indexes}')
+        #################################################################
+        ## debounce the triggers as they come in
+        # self.debounce_timestamps is in NIP samples (30 kHz)
+        trig_timestamps = trig_indexes[self.events_dtype_field].flatten()
+        # sort the triggers to find the inter-trigger interval
+        sorted_indexes = np.argsort(trig_timestamps)
+        trig_indexes = trig_indexes[sorted_indexes]
+        trig_timestamps = trig_timestamps[sorted_indexes]
+        ##
+        # debounce = self.debounce_timestamps / 3e4
+        # print(f"\non_new_trig, self.debounce_timestamps = {self.debounce_timestamps} ({debounce:.3f} sec)")
+        # trig_times = trig_timestamps / 3e4
+        # print(f"on_new_trig, before debounce: trig_times = {trig_times} (sec)")
+        ###
+        if self.last_trigger_timestamp == -1:
+            # add a dummy value to make sure we accept the first trigger
+            inter_trig_intervals = np.concatenate([[self.debounce_timestamps], np.diff(trig_timestamps)])
+        else:
+            inter_trig_intervals = np.diff(np.concatenate([[self.last_trigger_timestamp], trig_timestamps]))
+        # count the number of times we rolled over past the debounce threshold
+        div_result = np.cumsum(inter_trig_intervals) // self.debounce_timestamps
+        _, unique_indices = np.unique(div_result, return_index=True)
+        #
+        trig_indexes = trig_indexes[unique_indices]
+        trig_timestamps = trig_timestamps[unique_indices]
+        #
+        self.last_trigger_timestamp = trig_timestamps[-1]
+        ##
+        # trig_times = trig_timestamps / 3e4
+        # print(f"on_new_trig, after debounce: trig_times = {trig_times} (sec)\n")
+        ##
+        #################################################################
+        # pdb.set_trace()
         adj_index = (
-            trig_indexes[self.events_dtype_field].flatten() / self.nip_sample_period).astype('int64')
+            trig_timestamps / self.nip_sample_period).astype('int64')
+        # print(f'on_new_trig: adj_index = {adj_index}')
         for trig_index in adj_index:
             self.limit_poller.append_limit(trig_index + self.limit2)
         data = np.zeros(trig_indexes.shape, dtype=_dtype_peak)
-        data['timestamp'] = trig_indexes[self.events_dtype_field].flatten()
+        data['timestamp'] = trig_timestamps
         data['index'] = adj_index
         # data['cluster_label'] = trig_indexes['channel'].flatten().astype('int64')
         data['cluster_label'] = self.current_stim_cluster['cluster_label']
@@ -757,10 +804,10 @@ class RippleTriggeredWindow(QT.QMainWindow):
         #self.addDockWidget(QT.Qt.RightDockWidgetArea, docks['traceviewer'])
         self.tabifyDockWidget(docks['waveformviewer'], docks['traceviewer'])'''
         
-        docks['clusterlist'] = QT.QDockWidget('clusterlist',self)
+        docks['clusterlist'] = QT.QDockWidget('stim pattern list', self)
         docks['clusterlist'].setWidget(self.clusterlist)
 
-        docks['peaklist'] = QT.QDockWidget('peaklist',self)
+        docks['peaklist'] = QT.QDockWidget('spike list',self)
         docks['peaklist'].setWidget(self.peaklist)
         self.addDockWidget(QT.Qt.LeftDockWidgetArea, docks['peaklist'])
         self.splitDockWidget(docks['peaklist'], docks['clusterlist'], QT.Qt.Vertical)
@@ -772,7 +819,7 @@ class RippleTriggeredWindow(QT.QMainWindow):
         self.create_actions()
         self.create_toolbar()
 
-        self.speed = 5. #  Hz
+        self.speed = 10. #  Hz
         self.timer = RefreshTimer(interval=self.speed ** -1, node=self)
         self.timer.timeout.connect(self.refresh)
         for w in self.controller.views:
@@ -785,7 +832,7 @@ class RippleTriggeredWindow(QT.QMainWindow):
         
     def create_actions(self):
         #~ self.act_refresh = QT.QAction('Refresh', self,checkable = False, icon=QT.QIcon.fromTheme("view-refresh"))
-        self.act_refresh = QT.QAction('Refresh', self,checkable = False, icon=QT.QIcon(":/view-refresh.svg"))
+        self.act_refresh = QT.QAction('recalc\nsummary\nstatistics', self,checkable = False, icon=QT.QIcon(":/view-refresh.svg"))
         self.act_refresh.triggered.connect(self.refresh_with_reload)
 
     def create_toolbar(self):
