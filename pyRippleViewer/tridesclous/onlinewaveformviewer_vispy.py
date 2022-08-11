@@ -12,6 +12,9 @@ from vispy import scene
 
 dataio_param_names = ['left_sweep', 'right_sweep', 'stack_size']
 
+default_geometry_factor_y = 0.5
+default_flatten_factor_y = 0.5
+
 class WaveformViewerBase(WidgetBase):
 
     def __init__(self, controller=None, parent=None):
@@ -40,8 +43,8 @@ class WaveformViewerBase(WidgetBase):
         self.yaxis1 = None
         self.yaxis2 = None
 
-        self.show_xaxis_geometry = False
-        self.show_yaxis_geometry = False
+        self.show_xaxis_geometry = True
+        self.show_yaxis_geometry = True
 
         self.show_xaxis_flatten = True
         self.show_yaxis_flatten = True
@@ -85,9 +88,9 @@ class WaveformViewerBase(WidgetBase):
         self._y1_range = None
         self._y2_range = None
         if self.mode=='flatten':
-            self.factor_y = 0.5
+            self.factor_y = default_flatten_factor_y
         elif self.mode=='geometry':
-            self.factor_y = 0.5
+            self.factor_y = default_geometry_factor_y
         self.refresh(keep_range=False)
     
     def on_combo_mode_changed(self):
@@ -215,7 +218,7 @@ class WaveformViewerBase(WidgetBase):
             if self.show_yaxis_flatten:
                 self.yaxis1 = scene.AxisWidget(
                     orientation='left',
-                    axis_label="Signal",
+                    axis_label="Signal (uV)",
                     axis_font_size=12,
                     axis_label_margin=25,
                     tick_label_margin=10)
@@ -225,7 +228,7 @@ class WaveformViewerBase(WidgetBase):
 
                 self.yaxis2 = scene.AxisWidget(
                     orientation='left',
-                    axis_label="Dispersion",
+                    axis_label="Dispersion (uV)",
                     axis_font_size=12,
                     axis_label_margin=25,
                     tick_label_margin=10)
@@ -257,10 +260,9 @@ class WaveformViewerBase(WidgetBase):
             self.viewbox2 = self.plot2.add_view(camera='panzoom', **viewbox_pos)
 
             if self.show_xaxis_geometry:
-                xaxis_label = "Time (sec)"
                 self.xaxis1 = scene.AxisWidget(
                     orientation='bottom',
-                    axis_label=xaxis_label,
+                    axis_label="X (mm)",
                     axis_font_size=12,
                     axis_label_margin=25,
                     tick_label_margin=10)
@@ -271,7 +273,7 @@ class WaveformViewerBase(WidgetBase):
             if self.show_yaxis_geometry:
                 self.yaxis1 = scene.AxisWidget(
                     orientation='left',
-                    axis_label="Signal",
+                    axis_label="Y (mm)",
                     axis_font_size=12,
                     axis_label_margin=25,
                     tick_label_margin=10)
@@ -364,7 +366,7 @@ class WaveformViewerBase(WidgetBase):
             self.curves_mad_plot2.append(curve_p2)
 
         if self.mode == 'flatten':
-            self.factor_y = .5
+            self.factor_y = default_flatten_factor_y
             for idx, k in enumerate(cluster_labels):
                 self.curves_mad_top[idx].visible = True
                 self.curves_mad_bottom[idx].visible = True
@@ -400,16 +402,19 @@ class WaveformViewerBase(WidgetBase):
                     self.delta_x = np.min(np.diff(np.sort(np.unique(xpos))))
                 else:
                     self.delta_x = np.unique(xpos)[0]
+                # print(f"initialize_plot, self.delta_x = {self.delta_x}")
                 if np.unique(ypos).size > 1:
                     self.delta_y = np.min(np.diff(np.sort(np.unique(ypos))))
                 else:
                     self.delta_y = max(np.unique(ypos)[0], 1)
-                self.factor_y = .5
+                # print(f"initialize_plot, self.delta_y = {self.delta_y}")
+                self.factor_y = default_geometry_factor_y
                 if self.delta_x > 0.:
                     #~ espx = self.delta_x/2. *.95
                     espx = self.delta_x / 2.5
                 else:
                     espx = .5
+                # print(f"initialize_plot, espx = {espx}")
                 for i, chan in enumerate(channel_group['channels']):
                     x, y = channel_group['geometry'][chan]
                     self.xvect[i, :] = np.linspace(x - espx, x + espx, num=width)
@@ -550,22 +555,24 @@ class WaveformViewerBase(WidgetBase):
 
             self.curves_geometry[idx].set_data(pos=xy, color=color, width=2)
             self.curves_geometry[idx].visible = not zero_centroids
-            if self.params['fillbetween'] and mad is not None:
-                mad = mad.T.flatten()
-                if zero_centroids:
-                    self.curves_mad_top[idx].visible = False
-                    self.curves_mad_bottom[idx].visible = False
-                else:
-                    xy = np.concatenate((xvect[:, None], (wf0+mad)[:, None],), axis=1)
-                    self.curves_mad_top[idx].set_data(pos=xy, color=color, width=1)
-                    self.curves_mad_top[idx].visible = True
-                    xy = np.concatenate((xvect[:, None], (wf0-mad)[:, None],), axis=1)
-                    self.curves_mad_bottom[idx].set_data(pos=xy, color=color, width=1)
-                    self.curves_mad_bottom[idx].visible = True
-                # self.curves_mad_fill[idx].setCurves(
-                #     curve1=self.curves_mad_top[idx],
-                #     curve2=self.curves_mad_bottom[idx])
             if mad is not None:
+                mad = mad.T.flatten()
+                # plot1
+                if self.params['shade_dispersion']:
+                    if zero_centroids:
+                        self.curves_mad_top[idx].visible = False
+                        self.curves_mad_bottom[idx].visible = False
+                    else:
+                        xy = np.concatenate((xvect[:, None], (wf0 + mad)[:, None],), axis=1)
+                        self.curves_mad_top[idx].set_data(pos=xy, color=color, width=1)
+                        self.curves_mad_top[idx].visible = True
+                        xy = np.concatenate((xvect[:, None], (wf0 - mad)[:, None],), axis=1)
+                        self.curves_mad_bottom[idx].set_data(pos=xy, color=color, width=1)
+                        self.curves_mad_bottom[idx].visible = True
+                    # self.curves_mad_fill[idx].setCurves(
+                    #     curve1=self.curves_mad_top[idx],
+                    #     curve2=self.curves_mad_bottom[idx])
+                # plot2
                 if zero_centroids:
                     self.curves_mad_plot2[idx].visible = False
                 else:
@@ -753,8 +760,8 @@ class WaveformViewerBase(WidgetBase):
                     xy = np.concatenate((xvect[:, None], wf[:, None],), axis=1)
                     curve.set_data(pos=xy, color=color)
                     curve.visible = True
-                elif self.mode=='geometry':
-                    ypos = self.arr_geometry[:,1]
+                elif self.mode == 'geometry':
+                    ypos = self.arr_geometry[:, 1]
                     wf = wf * self.factor_y * self.delta_y + ypos[None, :]
                     connect = np.ones(wf.shape, dtype='bool')
                     connect[0, :] = 0
@@ -822,7 +829,7 @@ class RippleWaveformViewer(WaveformViewerBase):
         {'name': 'plot_limit_for_flatten', 'type': 'bool', 'value': True},
         {'name': 'plot_zero_vline', 'type': 'bool', 'value': True},
         {'name': 'summary_statistics', 'type': 'list', 'value': 'none', 'values': ['median/mad', 'none'] },
-        {'name': 'fillbetween', 'type': 'bool', 'value': True},
+        {'name': 'shade_dispersion', 'type': 'bool', 'value': True},
         {'name': 'show_channel_num', 'type': 'bool', 'value': True},
         {'name': 'vline_color', 'type': 'color', 'value': '#FFFFFFAA'},
         {'name': 'max_num_points', 'type' :'int', 'value' : 128000, 'limits':[2000, np.inf]},

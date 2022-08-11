@@ -51,7 +51,7 @@ def main():
     channel_info = txBuffer.outputs['hi-res'].params['channel_info']
     channel_group = {
         'channels': [idx for idx, item in enumerate(channel_info)],
-        'geometry': [[0, 100 * idx] for idx, item in enumerate(channel_info)]
+        'geometry': [[100 * (idx % 3 - 1), 100 * idx] for idx, item in enumerate(channel_info)]
         }
 
     triggerAcc = RippleTriggerAccumulator()
