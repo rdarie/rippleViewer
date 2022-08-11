@@ -142,10 +142,10 @@ class WaveformViewerBase(WidgetBase):
             self.plot1.parent = None
 
         if self.xaxis1 is not None:
-            self.grid.remove_widget(self.xaxis1)
+            self.plot1.remove_widget(self.xaxis1)
             self.xaxis1.parent = None
         if self.yaxis1 is not None:
-            self.grid.remove_widget(self.yaxis1)
+            self.plot1.remove_widget(self.yaxis1)
             self.yaxis1.parent = None
 
         if self.plot2 is not None:
@@ -153,56 +153,42 @@ class WaveformViewerBase(WidgetBase):
             self.plot2.parent = None
 
         if self.xaxis2 is not None:
-            self.grid.remove_widget(self.xaxis2)
+            self.plot2.remove_widget(self.xaxis2)
             self.xaxis2.parent = None
         if self.yaxis2 is not None:
-            self.grid.remove_widget(self.yaxis2)
+            self.plot2.remove_widget(self.yaxis2)
             self.yaxis2.parent = None
 
         self.plot1 = scene.Grid()
-        self.viewbox1 = self.plot1.add_view(
-            row=0, col=0, camera='panzoom')
+        plot1_pos = dict(row=0, row_span=1, col=0, col_span=1)
+        self.grid.add_widget(widget=self.plot1, **plot1_pos)
 
         self.plot2 = scene.Grid()
-        self.viewbox2 = self.plot2.add_view(
-            row=0, col=0, camera='panzoom')
+        plot2_pos = dict(row=1, row_span=1, col=0, col_span=1)
+        # only added in flatten mode
 
         if self.mode == 'flatten':
-            if self.show_xaxis_flatten and self.show_yaxis_flatten:
-                xaxis1_pos = dict(row=1, row_span=1,  col=1, col_span=10)
-                yaxis1_pos = dict(row=0, row_span=10, col=0, col_span=1)
-                plot1_pos  = dict(row=0, row_span=10, col=1, col_span=10)
-                #
-                xaxis2_pos = dict(row=3, row_span=1,  col=1, col_span=10)
-                yaxis2_pos = dict(row=2, row_span=10, col=0, col_span=1)
-                plot2_pos  = dict(row=2, row_span=10, col=1, col_span=10)
-            elif self.show_xaxis_flatten and (not self.show_yaxis_flatten):
-                xaxis1_pos = dict(row=1, row_span=1,  col=0, col_span=10)
-                yaxis1_pos = None
-                plot1_pos  = dict(row=0, row_span=10, col=0, col_span=10)
-                #
-                xaxis2_pos = dict(row=3, row_span=1,  col=0, col_span=10)
-                yaxis2_pos = None
-                plot2_pos  = dict(row=2, row_span=10, col=0, col_span=10)
-            elif (not self.show_xaxis_flatten) and self.show_yaxis_flatten:
-                xaxis1_pos = None
-                yaxis1_pos = dict(row=0, row_span=10, col=0, col_span=1)
-                plot1_pos  = dict(row=0, row_span=10, col=1, col_span=10)
-                #
-                xaxis2_pos = None
-                yaxis2_pos = dict(row=1, row_span=10, col=0, col_span=1)
-                plot2_pos  = dict(row=1, row_span=10, col=1, col_span=10)
-            else:
-                xaxis1_pos = None
-                yaxis1_pos = None
-                plot1_pos  = dict(row=0, row_span=10, col=0, col_span=10)
-                #
-                xaxis2_pos = None
-                yaxis2_pos = None
-                plot2_pos  = dict(row=1, row_span=10, col=0, col_span=10)
-
-            self.grid.add_widget(widget=self.plot1, **plot1_pos)
             self.grid.add_widget(widget=self.plot2, **plot2_pos)
+            
+            if self.show_xaxis_flatten and self.show_yaxis_flatten:
+                xaxis_pos =   dict(row=1, row_span=1,  col=1, col_span=10)
+                yaxis_pos =   dict(row=0, row_span=10, col=0, col_span=1)
+                viewbox_pos = dict(row=0, row_span=10, col=1, col_span=10)
+            elif self.show_xaxis_flatten and (not self.show_yaxis_flatten):
+                xaxis_pos =   dict(row=1, row_span=1,  col=0, col_span=10)
+                yaxis_pos =   None
+                viewbox_pos = dict(row=0, row_span=10, col=0, col_span=10)
+            elif (not self.show_xaxis_flatten) and self.show_yaxis_flatten:
+                xaxis_pos =   None
+                yaxis_pos =   dict(row=0, row_span=10, col=0, col_span=1)
+                viewbox_pos = dict(row=0, row_span=10, col=1, col_span=10)
+            else:
+                xaxis_pos =   None
+                yaxis_pos =   None
+                viewbox_pos = dict(row=0, row_span=10, col=0, col_span=10)
+
+            self.viewbox1 = self.plot1.add_view(camera='panzoom', **viewbox_pos)
+            self.viewbox2 = self.plot2.add_view(camera='panzoom', **viewbox_pos)
             
             if self.show_xaxis_flatten:
                 xaxis_label = "Time (sec)"
@@ -213,8 +199,7 @@ class WaveformViewerBase(WidgetBase):
                     axis_label_margin=25,
                     tick_label_margin=10)
                 self.xaxis1.height_max = 40
-                self.grid.add_widget(
-                    self.xaxis1, **xaxis1_pos)
+                self.plot1.add_widget(self.xaxis1, **xaxis_pos)
                 self.xaxis1.link_view(self.viewbox1)
                 
                 self.xaxis2 = scene.AxisWidget(
@@ -224,8 +209,7 @@ class WaveformViewerBase(WidgetBase):
                     axis_label_margin=25,
                     tick_label_margin=10)
                 self.xaxis2.height_max = 40
-                self.grid.add_widget(
-                    self.xaxis2, **xaxis2_pos)
+                self.plot2.add_widget(self.xaxis2, **xaxis_pos)
                 self.xaxis2.link_view(self.viewbox2)
 
             if self.show_yaxis_flatten:
@@ -236,8 +220,7 @@ class WaveformViewerBase(WidgetBase):
                     axis_label_margin=25,
                     tick_label_margin=10)
                 self.yaxis1.width_max = 40
-                self.grid.add_widget(
-                    self.yaxis1, **yaxis1_pos)
+                self.plot1.add_widget(self.yaxis1, **yaxis_pos)
                 self.yaxis1.link_view(self.viewbox1)
 
                 self.yaxis2 = scene.AxisWidget(
@@ -247,31 +230,31 @@ class WaveformViewerBase(WidgetBase):
                     axis_label_margin=25,
                     tick_label_margin=10)
                 self.yaxis2.width_max = 40
-                self.grid.add_widget(
-                    self.yaxis2, **yaxis2_pos)
+                self.plot2.add_widget(self.yaxis2, **yaxis_pos)
                 self.yaxis2.link_view(self.viewbox2)
 
             self.viewbox1.camera.link(self.viewbox2.camera, axis="x")
             
         elif self.mode == 'geometry':
             if self.show_xaxis_geometry and self.show_yaxis_geometry:
-                xaxis1_pos = dict(row=1, row_span=1,  col=1, col_span=10)
-                yaxis1_pos = dict(row=0, row_span=10, col=0, col_span=1)
-                plot1_pos  = dict(row=0, row_span=10, col=1, col_span=10)
+                xaxis_pos =   dict(row=1, row_span=1,  col=1, col_span=10)
+                yaxis_pos =   dict(row=0, row_span=10, col=0, col_span=1)
+                viewbox_pos = dict(row=0, row_span=10, col=1, col_span=10)
             elif self.show_xaxis_geometry and (not self.show_yaxis_geometry):
-                xaxis1_pos = dict(row=0, row_span=1, col=0, col_span=10)
-                yaxis1_pos = None
-                plot1_pos  = dict(row=1, row_span=10, col=0, col_span=10)
+                xaxis_pos =   dict(row=1, row_span=1,  col=0, col_span=10)
+                yaxis_pos =   None
+                viewbox_pos = dict(row=0, row_span=10, col=0, col_span=10)
             elif (not self.show_xaxis_geometry) and self.show_yaxis_geometry:
-                xaxis1_pos = None
-                yaxis1_pos = dict(row=0, row_span=10, col=0, col_span=1)
-                plot1_pos  = dict(row=0, row_span=10, col=1, col_span=10)
+                xaxis_pos =   None
+                yaxis_pos =   dict(row=0, row_span=10, col=0, col_span=1)
+                viewbox_pos = dict(row=0, row_span=10, col=1, col_span=10)
             else:
-                xaxis1_pos = None
-                yaxis1_pos = None
-                plot1_pos  = dict(row=0, row_span=10, col=0, col_span=10)
+                xaxis_pos =   None
+                yaxis_pos =   None
+                viewbox_pos = dict(row=0, row_span=10, col=0, col_span=10)
 
-            self.grid.add_widget(widget=self.plot1, **plot1_pos)
+            self.viewbox1 = self.plot1.add_view(camera='panzoom', **viewbox_pos)
+            self.viewbox2 = self.plot2.add_view(camera='panzoom', **viewbox_pos)
 
             if self.show_xaxis_geometry:
                 xaxis_label = "Time (sec)"
@@ -282,7 +265,7 @@ class WaveformViewerBase(WidgetBase):
                     axis_label_margin=25,
                     tick_label_margin=10)
                 self.xaxis1.height_max = 40
-                self.grid.add_widget(self.xaxis1, **xaxis1_pos)
+                self.plot1.add_widget(self.xaxis1, **xaxis_pos)
                 self.xaxis1.link_view(self.viewbox1)
 
             if self.show_yaxis_geometry:
@@ -293,7 +276,7 @@ class WaveformViewerBase(WidgetBase):
                     axis_label_margin=25,
                     tick_label_margin=10)
                 self.yaxis1.width_max = 40
-                self.grid.add_widget(self.yaxis1, **yaxis1_pos)
+                self.plot1.add_widget(self.yaxis1, **yaxis_pos)
                 self.yaxis1.link_view(self.viewbox1)
 
         self.curves_individual = []
