@@ -251,7 +251,7 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         return
 
     def on_new_trig(
-            self, trig_num, trig_indexes):
+            self, trig_num, trig_indexes, verbose=False):
         # if LOGGING:
         #     logger.info(f'on_new_trig: {trig_indexes}')
         # add to all_peaks
@@ -264,10 +264,11 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         trig_indexes = trig_indexes[sorted_indexes]
         trig_timestamps = trig_timestamps[sorted_indexes]
         ##
-        # debounce = self.debounce_timestamps / 3e4
-        # print(f"\non_new_trig, self.debounce_timestamps = {self.debounce_timestamps} ({debounce:.3f} sec)")
-        # trig_times = trig_timestamps / 3e4
-        # print(f"on_new_trig, before debounce: trig_times = {trig_times} (sec)")
+        if verbose:
+            debounce = self.debounce_timestamps / 3e4
+            print(f"\non_new_trig, self.debounce_timestamps = {self.debounce_timestamps} ({debounce:.3f} sec)")
+            trig_times = trig_timestamps / 3e4
+            print(f"on_new_trig, before debounce: trig_times = {trig_times} (sec)")
         ###
         if self.last_trigger_timestamp == -1:
             # add a dummy value to make sure we accept the first trigger
@@ -276,18 +277,33 @@ class RippleTriggerAccumulator(TriggerAccumulator):
             inter_trig_intervals = np.diff(np.concatenate([[self.last_trigger_timestamp], trig_timestamps]))
         # count the number of times we rolled over past the debounce threshold
         div_result = np.cumsum(inter_trig_intervals) // self.debounce_timestamps
+        ##
+        if verbose:
+            print(f"on_new_trig, inter_trig_intervals = {inter_trig_intervals}")
+            print(f"on_new_trig, div_result = {div_result}")
+        ##
         _, unique_indices = np.unique(div_result, return_index=True)
+        unique_nonzero_indices = [uidx for uidx in unique_indices if div_result[uidx] > 0]
+        ##
+        if verbose:
+            print(f"on_new_trig, unique_indices = {unique_indices}")
+            print(f"on_new_trig, unique_nonzero_indices = {unique_nonzero_indices}")
+        if not len(unique_nonzero_indices):
+            if verbose:
+                print(f"on_new_trig, no indices left, returning..")
+            return
+        ##
         #
-        trig_indexes = trig_indexes[unique_indices]
-        trig_timestamps = trig_timestamps[unique_indices]
+        trig_indexes = trig_indexes[unique_nonzero_indices]
+        trig_timestamps = trig_timestamps[unique_nonzero_indices]
         #
         self.last_trigger_timestamp = trig_timestamps[-1]
         ##
-        # trig_times = trig_timestamps / 3e4
-        # print(f"on_new_trig, after debounce: trig_times = {trig_times} (sec)\n")
+        if verbose:
+            trig_times = trig_timestamps / 3e4
+            print(f"on_new_trig, after debounce: trig_times = {trig_times} (sec)\n")
         ##
         #################################################################
-        # pdb.set_trace()
         adj_index = (
             trig_timestamps / self.nip_sample_period).astype('int64')
         # print(f'on_new_trig: adj_index = {adj_index}')
@@ -301,6 +317,7 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         data['channel'] = 0
         data['segment'] = 0
         self._all_peaks_buffer.new_chunk(data[:, None])
+        return
                     
     def on_limit_reached(self, limit_index):
         # if LOGGING:
@@ -314,7 +331,7 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         self.limit2 = l2 = int(self.params['right_sweep'] * self.sample_rate)
         self.size = l2 - l1
         
-        self.t_vect = np.arange(l2-l1)/self.sample_rate + self.params['left_sweep']
+        self.t_vect = np.arange(l2-l1) / self.sample_rate + self.params['left_sweep']
         self.stack = RingBuffer(
             shape=(self.params['stack_size'], (l2-l1) * self.nb_channel),
             dtype='float64')
@@ -644,7 +661,7 @@ class RippleCatalogueController(ControllerBase):
     
     @property
     def positive_cluster_labels(self):
-        return self.cluster_labels[self.cluster_labels>=0] 
+        return self.cluster_labels[self.cluster_labels >= 0] 
     
     @property
     def cell_labels(self):

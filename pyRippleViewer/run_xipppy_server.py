@@ -46,8 +46,8 @@ def main():
         }
 
     dev.configure(
-        sample_interval_sec=100e-3, sample_chunksize_sec=50e-3,
-        buffer_size_sec=10.,
+        sample_interval_sec=100e-3, sample_chunksize_sec=100e-3,
+        buffer_size_sec=20.,
         channels=requestedChannels, verbose=False, debugging=False)
     print(f'dev.present_analogsignal_types = {dev.present_analogsignal_types}')
     for signalType in pyacq.ripple_signal_types:

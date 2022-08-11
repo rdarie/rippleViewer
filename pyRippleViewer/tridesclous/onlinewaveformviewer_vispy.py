@@ -9,6 +9,9 @@ LOGGING = False
 logger = logging.getLogger(__name__)
 
 from vispy import scene
+
+dataio_param_names = ['left_sweep', 'right_sweep', 'stack_size']
+
 class WaveformViewerBase(WidgetBase):
 
     def __init__(self, controller=None, parent=None):
@@ -26,9 +29,22 @@ class WaveformViewerBase(WidgetBase):
         self.sceneCanvas = MyQtSceneCanvas(
             parent=self, keys='interactive', show=True)
         self.layout.addWidget(self.sceneCanvas)
-        self.grid = self.sceneCanvas.central_widget.add_grid(margin=0)
+        self.grid = self.sceneCanvas.central_widget.add_grid(margin = 0)
+
         self.plot1 = None
         self.plot2 = None
+
+        self.xaxis1 = None
+        self.xaxis2 = None
+
+        self.yaxis1 = None
+        self.yaxis2 = None
+
+        self.show_xaxis_geometry = True
+        self.show_yaxis_geometry = True
+
+        self.show_xaxis_flatten = True
+        self.show_yaxis_flatten = True
 
         self.alpha = 60
         self.initialize_plot()
@@ -42,9 +58,9 @@ class WaveformViewerBase(WidgetBase):
         self.combo_mode = QT.QComboBox()
         tb.addWidget(self.combo_mode)
         #self.mode = 'flatten'
-        #self.combo_mode.addItems([ 'flatten', 'geometry'])
+        #self.combo_mode.addItems(['flatten', 'geometry'])
         self.mode = 'geometry'
-        self.combo_mode.addItems([ 'geometry', 'flatten'])
+        self.combo_mode.addItems(['geometry', 'flatten'])
         self.combo_mode.currentIndexChanged.connect(self.on_combo_mode_changed)
         tb.addSeparator()
         
@@ -69,7 +85,7 @@ class WaveformViewerBase(WidgetBase):
         self._y1_range = None
         self._y2_range = None
         if self.mode=='flatten':
-            self.factor_y = 1.
+            self.factor_y = 0.5
         elif self.mode=='geometry':
             self.factor_y = 0.5
         self.refresh(keep_range=False)
@@ -89,6 +105,10 @@ class WaveformViewerBase(WidgetBase):
             if param.name() == 'debounce_sec':
                 print(f"param_change_data = {data}")
                 self.controller.dataio.set_debounce(data)
+            if param.name() in dataio_param_names:
+                self.controller.dataio.params[param.name()] = data
+                self.controller.dataio.remake_stack()
+                self.initialize_plot()
         self.clear_plots()
 
     def initialize_plot(self):
@@ -121,19 +141,162 @@ class WaveformViewerBase(WidgetBase):
             self.grid.remove_widget(self.plot1)
             self.plot1.parent = None
 
-        self.plot1 = scene.Grid()
-        self.viewbox1 = self.plot1.add_view(row=0, col=0, camera='panzoom')
-        self.grid.add_widget(widget=self.plot1, row=0, col=0)
+        if self.xaxis1 is not None:
+            self.grid.remove_widget(self.xaxis1)
+            self.xaxis1.parent = None
+        if self.yaxis1 is not None:
+            self.grid.remove_widget(self.yaxis1)
+            self.yaxis1.parent = None
 
         if self.plot2 is not None:
             self.grid.remove_widget(self.plot2)
             self.plot2.parent = None
 
+        if self.xaxis2 is not None:
+            self.grid.remove_widget(self.xaxis2)
+            self.xaxis2.parent = None
+        if self.yaxis2 is not None:
+            self.grid.remove_widget(self.yaxis2)
+            self.yaxis2.parent = None
+
+        self.plot1 = scene.Grid()
+        self.viewbox1 = self.plot1.add_view(
+            row=0, col=0, camera='panzoom')
+
         self.plot2 = scene.Grid()
-        self.viewbox2 = self.plot2.add_view(row=0, col=0, camera='panzoom')
+        self.viewbox2 = self.plot2.add_view(
+            row=0, col=0, camera='panzoom')
+
+        if self.mode == 'flatten':
+            if self.show_xaxis_flatten and self.show_yaxis_flatten:
+                xaxis1_pos = dict(row=1, row_span=1,  col=1, col_span=10)
+                yaxis1_pos = dict(row=0, row_span=10, col=0, col_span=1)
+                plot1_pos  = dict(row=0, row_span=10, col=1, col_span=10)
+                #
+                xaxis2_pos = dict(row=3, row_span=1,  col=1, col_span=10)
+                yaxis2_pos = dict(row=2, row_span=10, col=0, col_span=1)
+                plot2_pos  = dict(row=2, row_span=10, col=1, col_span=10)
+            elif self.show_xaxis_flatten and (not self.show_yaxis_flatten):
+                xaxis1_pos = dict(row=1, row_span=1,  col=0, col_span=10)
+                yaxis1_pos = None
+                plot1_pos  = dict(row=0, row_span=10, col=0, col_span=10)
+                #
+                xaxis2_pos = dict(row=3, row_span=1,  col=0, col_span=10)
+                yaxis2_pos = None
+                plot2_pos  = dict(row=2, row_span=10, col=0, col_span=10)
+            elif (not self.show_xaxis_flatten) and self.show_yaxis_flatten:
+                xaxis1_pos = None
+                yaxis1_pos = dict(row=0, row_span=10, col=0, col_span=1)
+                plot1_pos  = dict(row=0, row_span=10, col=1, col_span=10)
+                #
+                xaxis2_pos = None
+                yaxis2_pos = dict(row=1, row_span=10, col=0, col_span=1)
+                plot2_pos  = dict(row=1, row_span=10, col=1, col_span=10)
+            else:
+                xaxis1_pos = None
+                yaxis1_pos = None
+                plot1_pos  = dict(row=0, row_span=10, col=0, col_span=10)
+                #
+                xaxis2_pos = None
+                yaxis2_pos = None
+                plot2_pos  = dict(row=1, row_span=10, col=0, col_span=10)
+
+            self.grid.add_widget(widget=self.plot1, **plot1_pos)
+            self.grid.add_widget(widget=self.plot2, **plot2_pos)
+            
+            if self.show_xaxis_flatten:
+                xaxis_label = "Time (sec)"
+                self.xaxis1 = scene.AxisWidget(
+                    orientation='bottom',
+                    axis_label=xaxis_label,
+                    axis_font_size=12,
+                    axis_label_margin=25,
+                    tick_label_margin=10)
+                self.xaxis1.height_max = 40
+                self.grid.add_widget(
+                    self.xaxis1, **xaxis1_pos)
+                self.xaxis1.link_view(self.viewbox1)
+                
+                self.xaxis2 = scene.AxisWidget(
+                    orientation='bottom',
+                    axis_label=xaxis_label,
+                    axis_font_size=12,
+                    axis_label_margin=25,
+                    tick_label_margin=10)
+                self.xaxis2.height_max = 40
+                self.grid.add_widget(
+                    self.xaxis2, **xaxis2_pos)
+                self.xaxis2.link_view(self.viewbox2)
+
+            if self.show_yaxis_flatten:
+                self.yaxis1 = scene.AxisWidget(
+                    orientation='left',
+                    axis_label="Signal",
+                    axis_font_size=12,
+                    axis_label_margin=25,
+                    tick_label_margin=10)
+                self.yaxis1.width_max = 40
+                self.grid.add_widget(
+                    self.yaxis1, **yaxis1_pos)
+                self.yaxis1.link_view(self.viewbox1)
+
+                self.yaxis2 = scene.AxisWidget(
+                    orientation='left',
+                    axis_label="Dispersion",
+                    axis_font_size=12,
+                    axis_label_margin=25,
+                    tick_label_margin=10)
+                self.yaxis2.width_max = 40
+                self.grid.add_widget(
+                    self.yaxis2, **yaxis2_pos)
+                self.yaxis2.link_view(self.viewbox2)
+
+            self.viewbox1.camera.link(self.viewbox2.camera, axis="x")
+            
+        elif self.mode == 'geometry':
+            if self.show_xaxis_geometry and self.show_yaxis_geometry:
+                xaxis1_pos = dict(row=1, row_span=1,  col=1, col_span=10)
+                yaxis1_pos = dict(row=0, row_span=10, col=0, col_span=1)
+                plot1_pos  = dict(row=0, row_span=10, col=1, col_span=10)
+            elif self.show_xaxis_geometry and (not self.show_yaxis_geometry):
+                xaxis1_pos = dict(row=0, row_span=1, col=0, col_span=10)
+                yaxis1_pos = None
+                plot1_pos  = dict(row=1, row_span=10, col=0, col_span=10)
+            elif (not self.show_xaxis_geometry) and self.show_yaxis_geometry:
+                xaxis1_pos = None
+                yaxis1_pos = dict(row=0, row_span=10, col=0, col_span=1)
+                plot1_pos  = dict(row=0, row_span=10, col=1, col_span=10)
+            else:
+                xaxis1_pos = None
+                yaxis1_pos = None
+                plot1_pos  = dict(row=0, row_span=10, col=0, col_span=10)
+
+            self.grid.add_widget(widget=self.plot1, **plot1_pos)
+
+            if self.show_xaxis_geometry:
+                xaxis_label = "Time (sec)"
+                self.xaxis1 = scene.AxisWidget(
+                    orientation='bottom',
+                    axis_label=xaxis_label,
+                    axis_font_size=12,
+                    axis_label_margin=25,
+                    tick_label_margin=10)
+                self.xaxis1.height_max = 40
+                self.grid.add_widget(self.xaxis1, **xaxis1_pos)
+                self.xaxis1.link_view(self.viewbox1)
+
+            if self.show_yaxis_geometry:
+                self.yaxis1 = scene.AxisWidget(
+                    orientation='left',
+                    axis_label="Signal",
+                    axis_font_size=12,
+                    axis_label_margin=25,
+                    tick_label_margin=10)
+                self.yaxis1.width_max = 40
+                self.grid.add_widget(self.yaxis1, **yaxis1_pos)
+                self.yaxis1.link_view(self.viewbox1)
 
         self.curves_individual = []
-        #
         for idx in range(self.params['individual_spikes_num']):
             curve = scene.Line(pos=None, width=1, parent=self.viewbox1.scene)
             self.curves_individual.append(curve)
@@ -166,25 +329,32 @@ class WaveformViewerBase(WidgetBase):
         self.region_dict2 = {}
         self.vline_list1 = []
         self.vline_list2 = []
+
+        regionColor = QT.QColor(self.params['vline_color'])
+        regionColor.setAlpha(60)
+        regionColor = regionColor.getRgbF()
+
         for i, c in enumerate(self.controller.channels):
-            if i%2==1:
-                region = scene.LinearRegion(pos=None, color=self.params['vline_color'].getRgbF(), vertical=True,
+            if i % 2 == 1:
+                region = scene.LinearRegion(
+                    pos=None, color=regionColor, vertical=True,
                 parent=self.viewbox1.scene)
                 region.visible = False
                 self.region_dict1[c] = region
                 #
-                region = scene.LinearRegion(pos=None, color=self.params['vline_color'].getRgbF(), vertical=True,
+                region = scene.LinearRegion(
+                    pos=None, color=regionColor, vertical=True,
                 parent=self.viewbox2.scene)
                 region.visible = False
                 self.region_dict2[c] = region
             vline = scene.InfiniteLine(
-                pos=None, color=self.params['vline_color'].getRgbF(), vertical=True,
+                pos=None, color=regionColor, vertical=True,
                 parent=self.viewbox1.scene
                 )
             vline.visible = False
             self.vline_list1.append(vline)
             vline = scene.InfiniteLine(
-                pos=None, color=self.params['vline_color'].getRgbF(), vertical=True,
+                pos=None, color=regionColor, vertical=True,
                 parent=self.viewbox2.scene
                 )
             vline.visible = False
@@ -210,14 +380,14 @@ class WaveformViewerBase(WidgetBase):
             # self.curves_mad_fill.append(fill)
             curve_p2 = scene.Line(pos=None, width=1, parent=self.viewbox2.scene)
             self.curves_mad_plot2.append(curve_p2)
+
         if self.mode == 'flatten':
-            self.grid.add_widget(widget=self.plot2, row=1, col=0)
-            self.factor_y = 1.
+            self.factor_y = .5
             for idx, k in enumerate(cluster_labels):
                 self.curves_mad_top[idx].visible = True
                 self.curves_mad_bottom[idx].visible = True
                 self.curves_mad_plot2[idx].visible = True
-            self.viewbox1.camera.link(self.viewbox2.camera, axis="x")
+
         elif self.mode == 'geometry':
             for idx, k in enumerate(cluster_labels):
                 self.curves_mad_top[idx].visible = False
@@ -242,8 +412,8 @@ class WaveformViewerBase(WidgetBase):
                 self.arr_geometry = np.array(self.arr_geometry, dtype='float64')
                 # if self.params['flip_bottom_up']:
                 #     self.arr_geometry[:, 1] *= -1.
-                xpos = self.arr_geometry[:,0]
-                ypos = self.arr_geometry[:,1]
+                xpos = self.arr_geometry[:, 0]
+                ypos = self.arr_geometry[:, 1]
                 if np.unique(xpos).size>1:
                     self.delta_x = np.min(np.diff(np.sort(np.unique(xpos))))
                 else:
@@ -252,7 +422,7 @@ class WaveformViewerBase(WidgetBase):
                     self.delta_y = np.min(np.diff(np.sort(np.unique(ypos))))
                 else:
                     self.delta_y = max(np.unique(ypos)[0], 1)
-                self.factor_y = .3
+                self.factor_y = .5
                 if self.delta_x > 0.:
                     #~ espx = self.delta_x/2. *.95
                     espx = self.delta_x / 2.5
@@ -270,7 +440,6 @@ class WaveformViewerBase(WidgetBase):
         
         self.sceneCanvas.ygain_zoom.connect(self.gain_zoom)
         self.sceneCanvas.doubleclicked.connect(self.open_settings)
-        #~ self.viewBox.xsize_zoom.connect(self.xsize_zoom)
 
     def _refresh(self, keep_range=False):
         #
@@ -300,6 +469,7 @@ class WaveformViewerBase(WidgetBase):
         if LOGGING: logger.info(f'Starting _refresh_mode_flatten...')
         #
         rect1 = self.viewbox1.camera.get_state()['rect']
+
         if self._x_range is not None and keep_range:
             self._x_range = (rect1.left, rect1.right)
             self._y1_range = (rect1.bottom, rect1.top)
@@ -310,13 +480,13 @@ class WaveformViewerBase(WidgetBase):
             return
 
         #waveforms
-        if self.params['summary_statistics']=='median/mad':
+        if self.params['summary_statistics'] == 'median/mad':
             key1, key2 = 'median', 'mad'
             zero_centroids = False
-        elif self.params['summary_statistics']=='mean/std':
+        elif self.params['summary_statistics'] == 'mean/std':
             key1, key2 = 'mean', 'std'
             zero_centroids = False
-        elif self.params['summary_statistics']=='none':
+        elif self.params['summary_statistics'] == 'none':
             key1, key2 = 'mean', 'std'
             zero_centroids = True
 
@@ -332,20 +502,25 @@ class WaveformViewerBase(WidgetBase):
         
         if self.params['plot_limit_for_flatten']:
             for i, c in enumerate(self.controller.channels):
-                if i%2==1:
+                if i % 2 == 1:
                     self.region_dict1[c].set_data(pos=[width*i, width*(i+1)-1])
                     self.region_dict1[c].visible = True
                     self.region_dict2[c].set_data(pos=[width*i, width*(i+1)-1])
                     self.region_dict2[c].visible = True
+        else:
+            for i, c in enumerate(self.controller.channels):
+                if i % 2 == 1:
+                    self.region_dict1[c].visible = False
+                    self.region_dict2[c].visible = False
+        
+        if self.params['plot_zero_vline']:
+            for i, c in enumerate(self.controller.channels):
                 self.vline_list1[i].set_data(pos=-n_left + width*i)
                 self.vline_list1[i].visible = True
                 self.vline_list2[i].set_data(pos=-n_left + width*i)
                 self.vline_list2[i].visible = True
         else:
             for i, c in enumerate(self.controller.channels):
-                if i%2==1:
-                    self.region_dict1[c].visible = False
-                    self.region_dict2[c].visible = False
                 self.vline_list1[i].visible = False
                 self.vline_list2[i].visible = False
 
@@ -360,7 +535,7 @@ class WaveformViewerBase(WidgetBase):
         xvect = None
         for idx, (k, v) in enumerate(cluster_visible.items()):
             if not v:
-                if k>=0:
+                if k >= 0:
                     self.curves_geometry[idx].visible = False
                     self.curves_mad_top[idx].visible = False
                     self.curves_mad_bottom[idx].visible = False
@@ -372,14 +547,16 @@ class WaveformViewerBase(WidgetBase):
             color2.setAlpha(self.alpha)
             color2 = color2.getRgbF()
             #
-            wf0, chans = self.controller.get_waveform_centroid(k, key1, channels=self.controller.channels)
+            wf0, chans = self.controller.get_waveform_centroid(
+                k, key1, channels=self.controller.channels)
             if wf0 is None: continue
             if ds_ratio > 1:
                 wf0 = wf0[::ds_ratio, :]
             if xvect is None:
                 xvect = np.arange(wf0.shape[0] * len(self.controller.channels))
             wf0 = wf0.T.flatten()
-            mad, chans = self.controller.get_waveform_centroid(k, key2, channels=self.controller.channels)
+            mad, chans = self.controller.get_waveform_centroid(
+                k, key2, channels=self.controller.channels)
             if mad is not None:
                 if ds_ratio > 1:
                     mad = mad[::ds_ratio, :]
@@ -421,7 +598,7 @@ class WaveformViewerBase(WidgetBase):
         #
         if self.params['show_channel_num']:
             for i, itemtext in enumerate(self.channel_num_labels):
-                itemtext.pos = (width * i - n_left, rect1.top * 0.9)
+                itemtext.pos = (width * (i - 1) + (n_right + n_left) / 2, rect1.top * 0.9)
                 itemtext.visible = True
         else:
             for itemtext in self.channel_num_labels:
@@ -464,6 +641,7 @@ class WaveformViewerBase(WidgetBase):
 
         max_num_points = int(self.params['max_num_points'] / self.controller.nb_channel)
         ds_ratio = width // max_num_points + 1
+
         for idx, k in enumerate(self.controller.positive_cluster_labels):
             self.curves_mad_top[idx].visible = False
             self.curves_mad_bottom[idx].visible = False
@@ -632,17 +810,22 @@ class RippleWaveformViewer(WaveformViewerBase):
       * **display_threshold**: what could it be ?
     """
     _params = [
-        {'name': 'plot_individual_spikes', 'type': 'list', 'value': 'last', 'values': ['last', 'selected', 'none']},
+        {'name': 'plot_individual_spikes', 'type': 'list', 'value': 'selected', 'values': ['last', 'selected', 'none']},
         {'name': 'individual_spikes_num', 'type' :'int', 'value' : 5, 'limits':[1, np.inf]},
         {'name': 'show_only_selected_cluster', 'type': 'bool', 'value': False},
         {'name': 'plot_limit_for_flatten', 'type': 'bool', 'value': True},
+        {'name': 'plot_zero_vline', 'type': 'bool', 'value': True},
         {'name': 'summary_statistics', 'type': 'list', 'value': 'none', 'values': ['median/mad', 'none'] },
         {'name': 'fillbetween', 'type': 'bool', 'value': True},
         {'name': 'show_channel_num', 'type': 'bool', 'value': True},
         {'name': 'vline_color', 'type': 'color', 'value': '#FFFFFFAA'},
-        {'name': 'max_num_points', 'type' :'int', 'value' : 16000, 'limits':[2000, np.inf]},
-        {'name': 'debounce_sec', 'type' :'float', 'value' : 50e-3, 'limits':[10e-3, np.inf]},
+        {'name': 'max_num_points', 'type' :'int', 'value' : 128000, 'limits':[2000, np.inf]},
+        {'name': 'debounce_sec', 'type' :'float', 'value' : 500e-3, 'limits':[10e-3, np.inf]},
+        {'name': 'left_sweep', 'type': 'float', 'value': -.1, 'step': 0.1,'suffix': 's', 'siPrefix': True},
+        {'name': 'right_sweep', 'type': 'float', 'value': .2, 'step': 0.1, 'suffix': 's', 'siPrefix': True},
+        {'name': 'stack_size', 'type' :'int', 'value' : 1000,  'limits':[1,np.inf] },
         # {'name': 'flip_bottom_up', 'type': 'bool', 'value': False},
         # {'name': 'display_threshold', 'type': 'bool', 'value' : False},
         # {'name': 'sparse_display', 'type': 'bool', 'value' : False },
         ]
+    
