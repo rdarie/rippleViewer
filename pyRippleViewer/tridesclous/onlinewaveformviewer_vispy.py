@@ -160,32 +160,32 @@ class WaveformViewerBase(WidgetBase):
             self.yaxis2.parent = None
 
         self.plot1 = scene.Grid()
-        plot1_pos = dict(row=0, row_span=1, col=0, col_span=1)
+        plot1_pos = dict(row=0, col=0)
         self.grid.add_widget(widget=self.plot1, **plot1_pos)
 
         self.plot2 = scene.Grid()
-        plot2_pos = dict(row=1, row_span=1, col=0, col_span=1)
+        plot2_pos = dict(row=1, col=0)
         # only added in flatten mode
 
         if self.mode == 'flatten':
             self.grid.add_widget(widget=self.plot2, **plot2_pos)
             
             if self.show_xaxis_flatten and self.show_yaxis_flatten:
-                xaxis_pos =   dict(row=1, row_span=1,  col=1, col_span=10)
-                yaxis_pos =   dict(row=0, row_span=10, col=0, col_span=1)
-                viewbox_pos = dict(row=0, row_span=10, col=1, col_span=10)
+                xaxis_pos =   dict(row=1, col=1)
+                yaxis_pos =   dict(row=0, col=0)
+                viewbox_pos = dict(row=0, col=1)
             elif self.show_xaxis_flatten and (not self.show_yaxis_flatten):
-                xaxis_pos =   dict(row=1, row_span=1,  col=0, col_span=10)
-                yaxis_pos =   None
-                viewbox_pos = dict(row=0, row_span=10, col=0, col_span=10)
+                xaxis_pos   = dict(row=1, col=0)
+                yaxis_pos   = None
+                viewbox_pos = dict(row=0, col=0)
             elif (not self.show_xaxis_flatten) and self.show_yaxis_flatten:
-                xaxis_pos =   None
-                yaxis_pos =   dict(row=0, row_span=10, col=0, col_span=1)
-                viewbox_pos = dict(row=0, row_span=10, col=1, col_span=10)
+                xaxis_pos   = None
+                yaxis_pos   = dict(row=0, col=0)
+                viewbox_pos = dict(row=0, col=1)
             else:
-                xaxis_pos =   None
-                yaxis_pos =   None
-                viewbox_pos = dict(row=0, row_span=10, col=0, col_span=10)
+                xaxis_pos   = None
+                yaxis_pos   = None
+                viewbox_pos = dict(row=0, col=0)
 
             self.viewbox1 = self.plot1.add_view(camera='panzoom', **viewbox_pos)
             self.viewbox2 = self.plot2.add_view(camera='panzoom', **viewbox_pos)
@@ -237,21 +237,21 @@ class WaveformViewerBase(WidgetBase):
             
         elif self.mode == 'geometry':
             if self.show_xaxis_geometry and self.show_yaxis_geometry:
-                xaxis_pos =   dict(row=1, row_span=1,  col=1, col_span=10)
-                yaxis_pos =   dict(row=0, row_span=10, col=0, col_span=1)
-                viewbox_pos = dict(row=0, row_span=10, col=1, col_span=10)
+                xaxis_pos   = dict(row=1, col=1)
+                yaxis_pos   = dict(row=0, col=0)
+                viewbox_pos = dict(row=0, col=1)
             elif self.show_xaxis_geometry and (not self.show_yaxis_geometry):
-                xaxis_pos =   dict(row=1, row_span=1,  col=0, col_span=10)
-                yaxis_pos =   None
-                viewbox_pos = dict(row=0, row_span=10, col=0, col_span=10)
+                xaxis_pos   = dict(row=1, col=0)
+                yaxis_pos   = None
+                viewbox_pos = dict(row=0, col=0)
             elif (not self.show_xaxis_geometry) and self.show_yaxis_geometry:
-                xaxis_pos =   None
-                yaxis_pos =   dict(row=0, row_span=10, col=0, col_span=1)
-                viewbox_pos = dict(row=0, row_span=10, col=1, col_span=10)
+                xaxis_pos   = None
+                yaxis_pos   = dict(row=0, col=0)
+                viewbox_pos = dict(row=0, col=1)
             else:
-                xaxis_pos =   None
-                yaxis_pos =   None
-                viewbox_pos = dict(row=0, row_span=10, col=0, col_span=10)
+                xaxis_pos   = None
+                yaxis_pos   = None
+                viewbox_pos = dict(row=0, col=0)
 
             self.viewbox1 = self.plot1.add_view(camera='panzoom', **viewbox_pos)
             self.viewbox2 = self.plot2.add_view(camera='panzoom', **viewbox_pos)
