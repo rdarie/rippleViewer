@@ -42,7 +42,7 @@ def main():
     # Start Qt application
     app = pg.mkQApp()
     #
-    showSpikes = True
+    showSpikes = False
     showScope = True
     showTFR = True
     signalTypesToPlot = ['hifreq'] # ['hi-res', 'hifreq', 'stim']

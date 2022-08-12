@@ -157,7 +157,7 @@ class OnlinePeakList(WidgetBase):
         self.layout.addWidget(self.label_title)
         
         self.tree = QT.QTreeView(
-            minimumWidth = 100, uniformRowHeights = True,
+            uniformRowHeights = True,
             selectionMode = QT.QAbstractItemView.ExtendedSelection,
             selectionBehavior = QT.QTreeView.SelectRows,
             contextMenuPolicy = QT.Qt.CustomContextMenu,)
@@ -173,9 +173,22 @@ class OnlinePeakList(WidgetBase):
         #~ for i in range(self.model.columnCount(None)):
             #~ print(i)
             #~ self.tree.resizeColumnToContents(i)
-        self.tree.setColumnWidth(0, 120)
-        # print('\n'.join(dir(self.tree)))
-        # pdb.set_trace()
+
+        # adjust widget size
+        thisQSize = self.sizeHint()
+        thisQSizePolicy = self.sizePolicy()
+        #
+        thisQSizePolicy.setHorizontalPolicy(QT.QSizePolicy.Preferred)
+        thisQSizePolicy.setVerticalPolicy(QT.QSizePolicy.Preferred)
+        thisQSizePolicy.setHorizontalStretch(1)
+        thisQSizePolicy.setVerticalStretch(3)
+        #
+        self.setSizePolicy(thisQSizePolicy)
+        self.setMinimumSize(thisQSize.width(), thisQSize.height())
+        # self.setMaximumSize(int(1.2 * thisQSize.width()), int(1.2 * thisQSize.height()))
+
+        # self.tree.setColumnWidth(0, 100)
+        # self.setMinimumWidth(100)
         
         self.refresh()
     
@@ -255,6 +268,19 @@ class OnlineClusterBaseList(WidgetBase):
         self.table.cellDoubleClicked.connect(self.on_double_clicked)
         
         self.make_menu()
+
+        # adjust widget size
+        thisQSize = self.sizeHint()
+        thisQSizePolicy = self.sizePolicy()
+        #
+        thisQSizePolicy.setHorizontalPolicy(QT.QSizePolicy.Preferred)
+        thisQSizePolicy.setVerticalPolicy(QT.QSizePolicy.Preferred)
+        thisQSizePolicy.setHorizontalStretch(1)
+        thisQSizePolicy.setVerticalStretch(1)
+        #
+        self.setSizePolicy(thisQSizePolicy)
+        self.setMinimumSize(thisQSize.width(), thisQSize.height())
+        # self.setMaximumSize(int(1.2 * thisQSize.width()), int(1.2 * thisQSize.height()))
         
         self.refresh()
 
@@ -269,8 +295,10 @@ class OnlineClusterBaseList(WidgetBase):
 
         self.table.setColumnCount(len(labels))
         self.table.setHorizontalHeaderLabels(labels)
+        #
         #~ self.table.setMinimumWidth(100)
-        #~ self.table.setColumnWidth(0,60)
+        #~ self.table.setColumnWidth(0, 60)
+        #
         self.table.setContextMenuPolicy(QT.Qt.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self.open_context_menu)
         self.table.setSelectionMode(QT.QAbstractItemView.ExtendedSelection)

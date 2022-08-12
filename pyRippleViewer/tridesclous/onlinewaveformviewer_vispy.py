@@ -12,8 +12,9 @@ from vispy import scene
 
 dataio_param_names = ['left_sweep', 'right_sweep', 'stack_size']
 
-default_geometry_factor_y = 0.5
-default_flatten_factor_y = 0.5
+default_factor_y = 0.5
+
+import pdb
 
 class WaveformViewerBase(WidgetBase):
 
@@ -32,6 +33,8 @@ class WaveformViewerBase(WidgetBase):
         self.sceneCanvas = MyQtSceneCanvas(
             parent=self, keys='interactive', show=True)
         self.layout.addWidget(self.sceneCanvas)
+
+        #
         self.grid = self.sceneCanvas.central_widget.add_grid(margin = 0)
 
         self.plot1 = None
@@ -50,6 +53,16 @@ class WaveformViewerBase(WidgetBase):
         self.show_yaxis_flatten = True
 
         self.alpha = 60
+
+        # adjust widget size
+        thisQSize = self.sizeHint()
+        thisQSizePolicy = self.sizePolicy()
+        thisQSizePolicy.setHorizontalPolicy(QT.QSizePolicy.MinimumExpanding)
+        thisQSizePolicy.setVerticalPolicy(QT.QSizePolicy.MinimumExpanding)
+        thisQSizePolicy.setHorizontalStretch(10)
+        self.setSizePolicy(thisQSizePolicy)
+        self.setMinimumSize(thisQSize.width(), thisQSize.height())
+
         self.initialize_plot()
         
         self.refresh(keep_range=False)
@@ -79,6 +92,19 @@ class WaveformViewerBase(WidgetBase):
         but.clicked.connect(self.refresh)
         tb.addWidget(but)
     
+    def reset_y_factor(self):
+
+        self.wf_min, self.wf_max = self.controller.get_min_max_centroids()
+
+        print(f"self.wf_min, self.wf_max = {self.wf_min, self.wf_max}")
+        if self.wf_min == 0 and self.wf_max == 0:
+            self.controller.dataio.compute_all_centroid()
+        # pdb.set_trace()
+        if self.wf_min == 0 and self.wf_max == 0:
+            self.factor_y = default_factor_y
+        else:
+            self.factor_y = (self.wf_max - self.wf_min) ** (-1)
+
     def gain_zoom(self, factor_ratio):
         self.factor_y *= factor_ratio
         self.refresh(keep_range=True)
@@ -87,10 +113,9 @@ class WaveformViewerBase(WidgetBase):
         self._x_range = None
         self._y1_range = None
         self._y2_range = None
-        if self.mode=='flatten':
-            self.factor_y = default_flatten_factor_y
-        elif self.mode=='geometry':
-            self.factor_y = default_geometry_factor_y
+        
+        self.reset_y_factor()
+
         self.refresh(keep_range=False)
     
     def on_combo_mode_changed(self):
@@ -313,13 +338,15 @@ class WaveformViewerBase(WidgetBase):
         self.region_dict2 = {}
         self.vline_list1 = []
         self.vline_list2 = []
+        self.scalebar_dict1 = {}
+        self.scalebar_dict2 = {}
 
         regionColor = QT.QColor(self.params['vline_color'])
-        regionColor.setAlpha(60)
+        regionColor.setAlpha(self.alpha)
         regionColor = regionColor.getRgbF()
         vlineColor = self.params['vline_color'].getRgbF()
         for i, c in enumerate(self.controller.channels):
-            if i % 2 == 1:
+            if i % 2 == 0:
                 region = scene.LinearRegion(
                     pos=None, color=regionColor, vertical=True,
                     parent=self.viewbox1.scene)
@@ -343,6 +370,19 @@ class WaveformViewerBase(WidgetBase):
                 )
             vline.visible = False
             self.vline_list2.append(vline)
+            #
+            self.scalebar_dict1[i] = {}
+            scalebar = scene.visuals.Axis(
+                axis_color=vlineColor, tick_color=vlineColor,
+                tick_direction=(0., -1.),
+                parent=self.viewbox1.scene)
+            scalebar.visible = False
+            self.scalebar_dict1[i]['x'] = scalebar
+            scalebar = scene.visuals.Axis(
+                axis_color=vlineColor, tick_color=vlineColor,
+                parent=self.viewbox1.scene)
+            scalebar.visible = False
+            self.scalebar_dict1[i]['y'] = scalebar
 
         self.curves_mad_top = []
         self.curves_mad_bottom = []
@@ -365,8 +405,9 @@ class WaveformViewerBase(WidgetBase):
             curve_p2 = scene.Line(pos=None, width=1, parent=self.viewbox2.scene)
             self.curves_mad_plot2.append(curve_p2)
 
+        self.reset_y_factor()
+
         if self.mode == 'flatten':
-            self.factor_y = default_flatten_factor_y
             for idx, k in enumerate(cluster_labels):
                 self.curves_mad_top[idx].visible = True
                 self.curves_mad_bottom[idx].visible = True
@@ -408,7 +449,6 @@ class WaveformViewerBase(WidgetBase):
                 else:
                     self.delta_y = max(np.unique(ypos)[0], 1)
                 # print(f"initialize_plot, self.delta_y = {self.delta_y}")
-                self.factor_y = default_geometry_factor_y
                 if self.delta_x > 0.:
                     #~ espx = self.delta_x/2. *.95
                     espx = self.delta_x / 2.5
@@ -418,8 +458,6 @@ class WaveformViewerBase(WidgetBase):
                 for i, chan in enumerate(channel_group['channels']):
                     x, y = channel_group['geometry'][chan]
                     self.xvect[i, :] = np.linspace(x - espx, x + espx, num=width)
-        
-        self.wf_min, self.wf_max = self.controller.get_min_max_centroids()
         
         self._x_range = None
         self._y1_range = None
@@ -453,7 +491,7 @@ class WaveformViewerBase(WidgetBase):
 
     def refresh_mode_flatten(self, cluster_visible, keep_range):
         if LOGGING: logger.info(f'Starting _refresh_mode_flatten...')
-        #
+        
         rect1 = self.viewbox1.camera.get_state()['rect']
 
         if self._x_range is not None and keep_range:
@@ -465,7 +503,8 @@ class WaveformViewerBase(WidgetBase):
         if self.controller.spike_index == []:
             return
 
-        #waveforms
+        # waveforms
+
         if self.params['summary_statistics'] == 'median/mad':
             key1, key2 = 'median', 'mad'
             zero_centroids = False
@@ -488,23 +527,23 @@ class WaveformViewerBase(WidgetBase):
         
         if self.params['plot_limit_for_flatten']:
             for i, c in enumerate(self.controller.channels):
-                if i % 2 == 1:
+                if i % 2 == 0:
                     # region_pos = [width * i, width * (i + 1) - 1)]
-                    region_pos = [(width * i + n_left) / self.sample_rate, (width * (i + 1) + n_left - 1) / self.sample_rate]
+                    region_pos = [ds_ratio * (width * i + n_left) / self.sample_rate, ds_ratio * (width * (i + 1) + n_left - 1) / self.sample_rate]
                     self.region_dict1[c].set_data(pos=region_pos)
                     self.region_dict1[c].visible = True
                     self.region_dict2[c].set_data(pos=region_pos)
                     self.region_dict2[c].visible = True
         else:
             for i, c in enumerate(self.controller.channels):
-                if i % 2 == 1:
+                if i % 2 == 0:
                     self.region_dict1[c].visible = False
                     self.region_dict2[c].visible = False
         
         if self.params['plot_zero_vline']:
             for i, c in enumerate(self.controller.channels):
                 # vline_pos = -n_left + width*i
-                vline_pos = width * i / self.sample_rate
+                vline_pos = ds_ratio * width * i / self.sample_rate
                 self.vline_list1[i].set_data(pos=vline_pos)
                 self.vline_list1[i].visible = True
                 self.vline_list2[i].set_data(pos=vline_pos)
@@ -544,7 +583,7 @@ class WaveformViewerBase(WidgetBase):
                 wf0 = wf0[::ds_ratio, :]
             if xvect is None:
                 xvect = np.arange(wf0.shape[0] * len(self.controller.channels))
-                xvect = (xvect + n_left) / self.sample_rate
+                xvect = ds_ratio * (xvect + n_left) / self.sample_rate
             wf0 = wf0.T.flatten()
             mad, chans = self.controller.get_waveform_centroid(
                 k, key2, channels=self.controller.channels)
@@ -579,13 +618,15 @@ class WaveformViewerBase(WidgetBase):
                     xy = np.concatenate((xvect[:, None], mad[:, None],), axis=1)
                     self.curves_mad_plot2[idx].set_data(pos=xy, color=color, width=1)
                     self.curves_mad_plot2[idx].visible = True
-        if self._x_range is None or not keep_range:
+        if (self._x_range is None) or (not keep_range):
             if xvect.size > 0:
                 self._x_range = xvect[0], xvect[-1]
                 self._y1_range = self.wf_min * 1.1, self.wf_max * 1.1
                 self._y2_range = 0., 5.
+            #
             self.viewbox1.camera.set_range(
                 x=self._x_range, y=self._y1_range, margin=0.)
+            #
             self.viewbox2.camera.set_range(
                 x=self._x_range, y=self._y2_range, margin=0.)
         if LOGGING: logger.info(f'Finished _refresh_mode_flatten...')
@@ -593,7 +634,7 @@ class WaveformViewerBase(WidgetBase):
         if self.params['show_channel_num']:
             for i, itemtext in enumerate(self.channel_num_labels):
                 # itemtext.pos = (width * i + n_left + width / 2, rect1.top * 0.9)
-                itemtext.pos = ((width * i + n_left + width / 2) / self.sample_rate, rect1.top * 0.9)
+                itemtext.pos = (ds_ratio * (width * i + n_left + width / 2) / self.sample_rate, rect1.top * 0.9)
                 itemtext.visible = True
         else:
             for itemtext in self.channel_num_labels:
@@ -634,7 +675,7 @@ class WaveformViewerBase(WidgetBase):
         for i, c in enumerate(self.controller.channels):
             self.vline_list1[i].visible = False
             self.vline_list2[i].visible = False
-            if i%2 == 1:
+            if i % 2 == 0:
                 self.region_dict1[c].visible = False
                 self.region_dict2[c].visible = False
         '''
@@ -649,6 +690,36 @@ class WaveformViewerBase(WidgetBase):
                 self.vline_list1[i].visible = False
                 self.vline_list2[i].visible = False
         '''
+        for i, c in enumerate(self.controller.channels):
+            if self.params['show_scalebar']:
+                x_center, y_center = self.arr_geometry[i, :]
+                x_start, x_end = self.xvect[i, 0], self.xvect[i, -1]
+                start_pos = (x_start, y_center - 1.1 * self.delta_y / 2,)
+                end_pos = (x_end, y_center - 1.1 * self.delta_y / 2,)
+                self.scalebar_dict1[i]['x'].pos = (start_pos, end_pos)
+                self.scalebar_dict1[i]['x'].domain = (ds_ratio * n_left / self.sample_rate, ds_ratio * n_right / self.sample_rate)
+                self.scalebar_dict1[i]['x'].axis_label = "Time (sec)"
+                self.scalebar_dict1[i]['x'].visible = True
+                #
+                x_length = x_end - x_start
+                y_length = self.wf_max - self.wf_min
+                if y_length > 0:
+                    wf_ave = (self.wf_max + self.wf_min) / 2
+                    y_domain = (wf_ave - 1.1 * y_length / 2, wf_ave + 1.1 * y_length / 2)
+                else:
+                    y_domain = (-1, 1)
+                y_start = y_center + y_domain[0] * self.factor_y * self.delta_y
+                y_stop = y_center + y_domain[1] * self.factor_y * self.delta_y
+                start_pos = (x_center - 1.1 * x_length / 2, y_start)
+                end_pos = (x_center - 1.1 * x_length / 2, y_stop)
+                self.scalebar_dict1[i]['y'].pos = (start_pos, end_pos)
+                self.scalebar_dict1[i]['y'].domain = y_domain
+                self.scalebar_dict1[i]['y'].axis_label = "Signal (uV)"
+                self.scalebar_dict1[i]['y'].visible = True
+            else:
+                self.scalebar_dict1[i]['x'].visible = False
+                self.scalebar_dict1[i]['y'].visible = False
+        
         for idx, k in enumerate(self.controller.positive_cluster_labels):
             self.curves_mad_top[idx].visible = False
             self.curves_mad_bottom[idx].visible = False
@@ -657,7 +728,7 @@ class WaveformViewerBase(WidgetBase):
 
         for idx, (k, v) in enumerate(cluster_visible.items()):
             if not v:
-                if k>=0:
+                if k >= 0:
                     self.curves_geometry[idx].visible = False
                 continue
             # print(f'cluster_visible idx, (k, v) {idx}, ({k}, {v})')
@@ -693,7 +764,7 @@ class WaveformViewerBase(WidgetBase):
         if self.params['show_channel_num']:
             for i, itemtext in enumerate(self.channel_num_labels):
                 x, y = self.arr_geometry[i, : ]
-                itemtext.pos = (x, y + self.delta_y / 2)
+                itemtext.pos = (x, y + 1.1 * self.delta_y / 2)
                 itemtext.visible = True
         else:
             for itemtext in self.channel_num_labels:
@@ -701,7 +772,7 @@ class WaveformViewerBase(WidgetBase):
         #~ if self._x_range is None:
         if self._x_range is None or not keep_range:
             self._x_range = np.min(self.xvect), np.max(self.xvect)
-            self._y1_range = np.min(self.arr_geometry[:,1])-self.delta_y*2, np.max(self.arr_geometry[:,1])+self.delta_y*2
+            self._y1_range = np.min(self.arr_geometry[:,1])- self.delta_y * 2, np.max(self.arr_geometry[:,1]) + self.delta_y * 2
             self.viewbox1.camera.set_range(
                 x=self._x_range, y=self._y1_range, margin=0.)
         if LOGGING: logger.info(f'Finished _refresh_mode_geometry...')
@@ -745,9 +816,9 @@ class WaveformViewerBase(WidgetBase):
                     wf = all_wf[idx, ::ds_ratio, :]
                 else:
                     wf = all_wf[idx, :, :]
-                if wf.sum() == 0:
-                    print(f"wf.sum() = {wf.sum()}")
-                    continue
+                # if wf.sum() == 0:
+                #     print(f"wf.sum() = {wf.sum()}")
+                #     continue
                 k = cluster_labels[idx]
                 color = self.controller.qcolors.get(k, QT.QColor('white')).getRgbF()
                 if self.mode == 'flatten':
@@ -756,7 +827,7 @@ class WaveformViewerBase(WidgetBase):
                         return
                     wf = wf[:, self._common_channels_flat].T.flatten()
                     xvect = np.arange(wf.size)
-                    xvect = (xvect + n_left) / self.sample_rate
+                    xvect = ds_ratio * (xvect + n_left) / self.sample_rate
                     xy = np.concatenate((xvect[:, None], wf[:, None],), axis=1)
                     curve.set_data(pos=xy, color=color)
                     curve.visible = True
@@ -831,6 +902,7 @@ class RippleWaveformViewer(WaveformViewerBase):
         {'name': 'summary_statistics', 'type': 'list', 'value': 'none', 'values': ['median/mad', 'none'] },
         {'name': 'shade_dispersion', 'type': 'bool', 'value': True},
         {'name': 'show_channel_num', 'type': 'bool', 'value': True},
+        {'name': 'show_scalebar', 'type': 'bool', 'value': True},
         {'name': 'vline_color', 'type': 'color', 'value': '#FFFFFFAA'},
         {'name': 'max_num_points', 'type' :'int', 'value' : 128000, 'limits':[2000, np.inf]},
         {'name': 'debounce_sec', 'type' :'float', 'value' : 500e-3, 'limits':[10e-3, np.inf]},

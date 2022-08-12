@@ -31,8 +31,8 @@ parser.add_argument('-pyacq_p', '--pyacq_server_port', required=False, help="Set
 args = parser.parse_args()
 
 webSocketConfOpts = dict(
-    server_ip='10.9.145.31', server_port=7890
-    # server_ip='192.168.42.1', server_port=7890
+    # server_ip='10.9.145.31', server_port=7890
+    server_ip='192.168.42.1', server_port=7890
     )
 if args.server_ip is not None:
     webSocketConfOpts['server_ip'] = args.server_ip

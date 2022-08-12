@@ -16,7 +16,7 @@ from pyRippleViewer.tridesclous.onlinepeaklists import OnlinePeakList, OnlineClu
 from pyRippleViewer.tridesclous.onlinewaveformviewer_vispy import RippleWaveformViewer
 from pyRippleViewer.tridesclous.main_tools import (median_mad, mean_std, make_color_dict, get_color_palette)
 
-import pdb
+import pdb, traceback
 
 _dtype_peak = [
     ('index', 'int64'),
@@ -75,7 +75,7 @@ class RippleTriggerAccumulator(TriggerAccumulator):
     _default_params = [
         {'name': 'left_sweep', 'type': 'float', 'value': -.1, 'step': 0.1,'suffix': 's', 'siPrefix': True},
         {'name': 'right_sweep', 'type': 'float', 'value': .2, 'step': 0.1, 'suffix': 's', 'siPrefix': True},
-        {'name': 'stack_size', 'type' :'int', 'value' : 1000,  'limits':[1,np.inf] },
+        {'name': 'stack_size', 'type' :'int', 'value' : 500,  'limits':[1, np.inf] },
         ]
     
     unique_stim_param_names = ['elecCath', 'elecAno', 'amp', 'freq', 'pulseWidth', 'amp_steps', 'stim_res']
@@ -181,12 +181,8 @@ class RippleTriggerAccumulator(TriggerAccumulator):
             ]
         self.datasource = DummyDataSource(self.all_channel_names)
         ####
-        # stim_channels = [
-        #     item['channel_index']
-        #     for item in self.inputs['events'].params['channel_info']]
-        # self.clusters = np.zeros(shape=(len(stim_channels),), dtype=_dtype_cluster)
-        # self.clusters['cluster_label'] = stim_channels
         self.clusters = np.zeros(shape=(1,), dtype=_dtype_cluster)
+        # self.clusters['cluster_label'] = -1
         self.current_stim_cluster = np.zeros(shape=(1,), dtype=_dtype_cluster)
         ####
         self._all_peaks_buffer = RingBuffer(
@@ -200,18 +196,11 @@ class RippleTriggerAccumulator(TriggerAccumulator):
     def make_centroids(self):
         n_left = self.limit1
         n_right = self.limit2
-        self.centroids_median = np.zeros(
-            (self.cluster_labels.size, n_right - n_left, self.nb_channel),
-            dtype=self.source_dtype)
-        self.centroids_mad = np.zeros(
-            (self.cluster_labels.size, n_right - n_left, self.nb_channel),
-            dtype=self.source_dtype)
-        self.centroids_mean = np.zeros(
-            (self.cluster_labels.size, n_right - n_left, self.nb_channel),
-            dtype=self.source_dtype)
-        self.centroids_std = np.zeros(
-            (self.cluster_labels.size, n_right - n_left, self.nb_channel),
-            dtype=self.source_dtype)
+        #
+        self.centroids_median = np.zeros((self.cluster_labels.size, n_right - n_left, self.nb_channel), dtype=self.source_dtype)
+        self.centroids_mad = np.ones((self.cluster_labels.size, n_right - n_left, self.nb_channel), dtype=self.source_dtype)
+        self.centroids_mean = np.zeros((self.cluster_labels.size, n_right - n_left, self.nb_channel), dtype=self.source_dtype)
+        self.centroids_std = np.ones((self.cluster_labels.size, n_right - n_left, self.nb_channel), dtype=self.source_dtype)
 
     def _start(self):
         self.trig_poller.start()
@@ -241,7 +230,17 @@ class RippleTriggerAccumulator(TriggerAccumulator):
             newCluster[self.unique_stim_param_names] = stim_packet[self.unique_stim_param_names]
             self.current_stim_cluster = newCluster
             self.clusters = np.concatenate([self.clusters, newCluster])
-            self.make_centroids()
+            ##
+            n_left = self.limit1
+            n_right = self.limit2
+            ## add blank entry to summary stats
+            for attrName in ['centroids_mad', 'centroids_std']:
+                expandedArr = np.concatenate([getattr(self, attrName), np.ones((1, n_right - n_left, self.nb_channel), dtype=self.source_dtype)])
+                setattr(self, attrName, expandedArr)
+            for attrName in ['centroids_median', 'centroids_mean']:
+                expandedArr = np.concatenate([getattr(self, attrName), np.zeros((1, n_right - n_left, self.nb_channel), dtype=self.source_dtype)])
+                setattr(self, attrName, expandedArr)
+            ##
             self.refresh_colors()
             self.new_cluster.emit()
         else:
@@ -303,26 +302,25 @@ class RippleTriggerAccumulator(TriggerAccumulator):
             trig_times = trig_timestamps / 3e4
             print(f"on_new_trig, after debounce: trig_times = {trig_times} (sec)\n")
         ##
-        #################################################################
         adj_index = (
             trig_timestamps / self.nip_sample_period).astype('int64')
-        # print(f'on_new_trig: adj_index = {adj_index}')
         for trig_index in adj_index:
             self.limit_poller.append_limit(trig_index + self.limit2)
         data = np.zeros(trig_indexes.shape, dtype=_dtype_peak)
         data['timestamp'] = trig_timestamps
         data['index'] = adj_index
-        # data['cluster_label'] = trig_indexes['channel'].flatten().astype('int64')
         data['cluster_label'] = self.current_stim_cluster['cluster_label']
         data['channel'] = 0
         data['segment'] = 0
+        self.clusters['nb_peak'][self.clusters['cluster_label'] == self.current_stim_cluster['cluster_label']] += data.shape[0]
         self._all_peaks_buffer.new_chunk(data[:, None])
         return
-                    
+
     def on_limit_reached(self, limit_index):
         # if LOGGING:
         #     logger.info(f'on limit reached: {limit_index-self.size}:{limit_index}')
         arr = self.get_signals_chunk(i_start=limit_index-self.size, i_stop=limit_index)
+        pdb.set_trace()
         if arr is not None:
             self.stack.new_chunk(arr.reshape(1, (self.limit2 - self.limit1) * self.nb_channel))
 
@@ -331,7 +329,7 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         self.limit2 = l2 = int(self.params['right_sweep'] * self.sample_rate)
         self.size = l2 - l1
         
-        self.t_vect = np.arange(l2-l1) / self.sample_rate + self.params['left_sweep']
+        self.t_vect = np.arange(l2 - l1) / self.sample_rate + self.params['left_sweep']
         self.stack = RingBuffer(
             shape=(self.params['stack_size'], (l2-l1) * self.nb_channel),
             dtype='float64')
@@ -483,10 +481,10 @@ class RippleTriggerAccumulator(TriggerAccumulator):
     
     @property
     def positive_cluster_labels(self):
-        return self.cluster_labels[self.cluster_labels>=0] 
+        return self.cluster_labels[self.cluster_labels >= 0] 
 
     def index_of_label(self, label):
-        ind = np.nonzero(self.clusters['cluster_label']==label)[0][0]
+        ind = np.nonzero(self.clusters['cluster_label'] == label)[0][0]
         return ind
 
     def recalc_cluster_info(self):
@@ -507,6 +505,8 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         
         # selected = np.flatnonzero(all_peaks['cluster_label'][self.some_peaks_index]==k).tolist()
         selected = np.flatnonzero(self.all_peaks['cluster_label'] == k)
+        if selected.size == 0:
+            return
         if selected.size > n_spike_for_centroid:
             keep = np.random.choice(
                 selected.size, n_spike_for_centroid, replace=False)
@@ -516,10 +516,13 @@ class RippleTriggerAccumulator(TriggerAccumulator):
             seg_num=0,
             peaks_index=selected,
             n_left=n_left, n_right=n_right,
-            waveforms=None, channel_indexes=None)
+            waveforms = None, channel_indexes = None)
         
         med = np.nanmedian(wf, axis=0)
-        mad = np.nanmedian(np.abs(wf-med),axis=0)*1.4826
+        med[np.isnan(med)] = 0.
+        mad = np.nanmedian(np.abs(wf - med),axis=0) * 1.4826
+        mad[mad == 0. | np.isnan(mad)] = 1.
+        
         '''
         print(
             f'k = {k}; ind = {ind}'
@@ -528,31 +531,23 @@ class RippleTriggerAccumulator(TriggerAccumulator):
             )'''
 
         # median, mad = mean_std(wf, axis=0)
-        # to persistant arrays
+        # to persistent arrays
         self.centroids_median[ind, :, :] = med
         self.centroids_mad[ind, :, :] = mad
         #~ self.centroids_mean[ind, :, :] = mean
         #~ self.centroids_std[ind, :, :] = std
-        self.centroids_mean[ind, :, :] = 0
-        self.centroids_std[ind, :, :] = 0
+        #
+        self.centroids_mean[ind, :, :] = 0.
+        self.centroids_std[ind, :, :] = 1.
         
     def compute_several_centroids(self, labels, n_spike_for_centroid=None):
         # TODO make this in paralell
         for k in labels:
-            self.compute_one_centroid(
-                k, flush=False,
-                n_spike_for_centroid=n_spike_for_centroid)
+            self.compute_one_centroid(k, flush=False, n_spike_for_centroid=n_spike_for_centroid)
         
     def compute_all_centroid(self, n_spike_for_centroid=None):
         
-        n_left = self.limit1
-        n_right = self.limit2
-        
-        self.centroids_median = np.zeros((self.cluster_labels.size, n_right - n_left, self.nb_channel), dtype=self.source_dtype)
-        self.centroids_mad = np.zeros((self.cluster_labels.size, n_right - n_left, self.nb_channel), dtype=self.source_dtype)
-        self.centroids_mean = np.zeros((self.cluster_labels.size, n_right - n_left, self.nb_channel), dtype=self.source_dtype)
-        self.centroids_std = np.zeros((self.cluster_labels.size, n_right - n_left, self.nb_channel), dtype=self.source_dtype)
-        
+        self.make_centroids()
         self.compute_several_centroids(self.positive_cluster_labels, n_spike_for_centroid=n_spike_for_centroid)
 
     def _close(self):
@@ -721,7 +716,7 @@ class RippleCatalogueController(ControllerBase):
         ind = ind[0]
         
         extremum_channel = self.dataio.clusters['extremum_channel'][ind]
-        if extremum_channel>=0:
+        if extremum_channel >= 0:
             return extremum_channel
         else:
             return None
@@ -758,7 +753,7 @@ class RippleCatalogueController(ControllerBase):
             return None, None
 
     def get_min_max_centroids(self):
-        if self.dataio.centroids_median is not None and self.dataio.centroids_median.size>0:
+        if self.dataio.centroids_median is not None and self.dataio.centroids_median.size > 0:
             wf_min = self.dataio.centroids_median.min()
             wf_max = self.dataio.centroids_median.max()
         else:
@@ -781,7 +776,7 @@ class RippleCatalogueController(ControllerBase):
 class RippleTriggeredWindow(QT.QMainWindow):
 
     def __init__(
-            self, dataio=None,
+            self, dataio=None, speed=5.,
             window_title="Triggered signal viewer"):
         QT.QMainWindow.__init__(self)
 
@@ -790,58 +785,57 @@ class RippleTriggeredWindow(QT.QMainWindow):
         self.setWindowTitle(self.window_title)
         
         self.controller = RippleCatalogueController(dataio=dataio)
-        #
-        # self.thread = QT.QThread(parent=self)
-        # self.controller.moveToThread(self.thread)
-        #
-        # self.traceviewer = CatalogueTraceViewer(controller=self.controller)
+
         self.clusterlist = OnlineClusterPeakList(controller=self.controller)
         self.peaklist = OnlinePeakList(controller=self.controller)
         self.waveformviewer = RippleWaveformViewer(controller=self.controller)
-        #
-        # self.pairlist = PairList(controller=self.controller)
-        # self.waveformhistviewer = WaveformHistViewer(controller=self.controller)
+
         
         docks = {}
 
-        docks['waveformviewer'] = QT.QDockWidget('waveformviewer',self)
+        docks['waveformviewer'] = QT.QDockWidget('waveformviewer', self)
         docks['waveformviewer'].setWidget(self.waveformviewer)
         self.addDockWidget(QT.Qt.RightDockWidgetArea, docks['waveformviewer'])
-        #self.tabifyDockWidget(docks['ndscatter'], docks['waveformviewer'])
 
         self.dataio.new_cluster.connect(self.waveformviewer.initialize_plot)
-
-        '''
-        docks['waveformhistviewer'] = QT.QDockWidget('waveformhistviewer',self)
-        docks['waveformhistviewer'].setWidget(self.waveformhistviewer)
-        self.tabifyDockWidget(docks['waveformviewer'], docks['waveformhistviewer'])
-        '''
-
-        '''docks['traceviewer'] = QT.QDockWidget('traceviewer',self)
-        docks['traceviewer'].setWidget(self.traceviewer)
-        #self.addDockWidget(QT.Qt.RightDockWidgetArea, docks['traceviewer'])
-        self.tabifyDockWidget(docks['waveformviewer'], docks['traceviewer'])'''
         
         docks['clusterlist'] = QT.QDockWidget('stim pattern list', self)
         docks['clusterlist'].setWidget(self.clusterlist)
 
-        docks['peaklist'] = QT.QDockWidget('spike list',self)
+        docks['peaklist'] = QT.QDockWidget('spike list', self)
         docks['peaklist'].setWidget(self.peaklist)
         self.addDockWidget(QT.Qt.LeftDockWidgetArea, docks['peaklist'])
         self.splitDockWidget(docks['peaklist'], docks['clusterlist'], QT.Qt.Vertical)
-        '''
-        docks['pairlist'] = QT.QDockWidget('pairlist',self)
-        docks['pairlist'].setWidget(self.pairlist)
-        self.tabifyDockWidget(docks['pairlist'], docks['clusterlist'])
-        '''
+
         self.create_actions()
         self.create_toolbar()
+        '''
+        # adjust dock sizes
+        for dockName in ['waveformviewer']:
+            thisQSize = docks[dockName].sizeHint()
+            thisQSizePolicy = docks[dockName].sizePolicy()
+            thisQSizePolicy.setHorizontalPolicy(QT.QSizePolicy.MinimumExpanding)
+            thisQSizePolicy.setVerticalPolicy(QT.QSizePolicy.MinimumExpanding)
+            thisQSizePolicy.setHorizontalStretch(10)
+            docks[dockName].setSizePolicy(thisQSizePolicy)
+            docks[dockName].setMinimumSize(thisQSize.width(), thisQSize.height())
+        #
+        for dockName in ['peaklist', 'clusterlist']:
+            thisQSize = docks[dockName].sizeHint()
+            thisQSizePolicy = docks[dockName].sizePolicy()
+            thisQSizePolicy.setHorizontalPolicy(QT.QSizePolicy.Preferred)
+            thisQSizePolicy.setVerticalPolicy(QT.QSizePolicy.Preferred)
+            thisQSizePolicy.setHorizontalStretch(1)
+            docks[dockName].setSizePolicy(thisQSizePolicy)
+            docks[dockName].setMinimumSize(thisQSize.width(), thisQSize.height())'''
 
-        self.speed = 10. #  Hz
+        self.speed = speed # Hz
         self.timer = RefreshTimer(interval=self.speed ** -1, node=self)
         self.timer.timeout.connect(self.refresh)
-        for w in self.controller.views:
-            self.timer.timeout.connect(w.refresh)
+
+        for view in self.controller.views:
+            self.timer.timeout.connect(view.refresh)
+
 
     def start_refresh(self):
         self.timer.start()
@@ -850,7 +844,8 @@ class RippleTriggeredWindow(QT.QMainWindow):
         
     def create_actions(self):
         #~ self.act_refresh = QT.QAction('Refresh', self,checkable = False, icon=QT.QIcon.fromTheme("view-refresh"))
-        self.act_refresh = QT.QAction('recalc\nsummary\nstatistics', self,checkable = False, icon=QT.QIcon(":/view-refresh.svg"))
+        self.act_refresh = QT.QAction(
+            'recalc\nsummary\nstatistics', self, checkable=False, icon=QT.QIcon(":/view-refresh.svg"))
         self.act_refresh.triggered.connect(self.refresh_with_reload)
 
     def create_toolbar(self):

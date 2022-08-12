@@ -36,7 +36,7 @@ def main():
     print("Running server at: %s" % server.address.decode())
 
     # Create a xipppy buffer node
-    dev = pyacq.XipppyTxBuffer(name='nip0', dummy=True)
+    dev = pyacq.XipppyTxBuffer(name='nip0', dummy=False)
     server['nip0'] = dev
 
     requestedChannels = {
