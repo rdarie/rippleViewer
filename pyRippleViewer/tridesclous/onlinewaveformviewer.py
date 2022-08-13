@@ -22,11 +22,12 @@ class MyViewBox(pg.ViewBox):
         ev.accept()
     #~ def mouseDragEvent(self, ev):
         #~ ev.ignore()
+
     def wheelEvent(self, ev, axis=None):
         if ev.modifiers() == QT.Qt.ControlModifier:
-            z = 10 if ev.delta()>0 else 1/10.
+            z = 10 if ev.delta() > 0 else 1/10.
         else:
-            z = 1.3 if ev.delta()>0 else 1/1.3
+            z = 1.3 if ev.delta() > 0 else 1/1.3
         self.gain_zoom.emit(z)
         ev.accept()
 

@@ -80,7 +80,7 @@ class RippleTriggerAccumulator(TriggerAccumulator):
     
     unique_stim_param_names = ['elecCath', 'elecAno', 'amp', 'freq', 'pulseWidth', 'amp_steps', 'stim_res']
     new_chunk = QT.pyqtSignal(int)
-    new_cluster = QT.pyqtSignal()
+    new_cluster = QT.pyqtSignal(int)
     
     def __init__(
             self, parent=None, **kargs,
@@ -182,7 +182,7 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         self.datasource = DummyDataSource(self.all_channel_names)
         ####
         self.clusters = np.zeros(shape=(1,), dtype=_dtype_cluster)
-        # self.clusters['cluster_label'] = -1
+        self.clusters['cluster_label'] = labelcodes.LABEL_TRASH
         self.current_stim_cluster = np.zeros(shape=(1,), dtype=_dtype_cluster)
         ####
         self._all_peaks_buffer = RingBuffer(
@@ -226,7 +226,8 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         alreadySeen = stim_packet[self.unique_stim_param_names] in self.clusters[self.unique_stim_param_names]
         if not alreadySeen:
             newCluster = np.zeros((1,), dtype=_dtype_cluster)
-            newCluster['cluster_label'] = self.clusters['cluster_label'].max() + 1
+            newClusterLabel = self.clusters['cluster_label'].max() + 1
+            newCluster['cluster_label'] = newClusterLabel
             newCluster[self.unique_stim_param_names] = stim_packet[self.unique_stim_param_names]
             self.current_stim_cluster = newCluster
             self.clusters = np.concatenate([self.clusters, newCluster])
@@ -235,14 +236,18 @@ class RippleTriggerAccumulator(TriggerAccumulator):
             n_right = self.limit2
             ## add blank entry to summary stats
             for attrName in ['centroids_mad', 'centroids_std']:
-                expandedArr = np.concatenate([getattr(self, attrName), np.ones((1, n_right - n_left, self.nb_channel), dtype=self.source_dtype)])
+                expandedArr = np.concatenate(
+                    [getattr(self, attrName),
+                    np.ones((1, n_right - n_left, self.nb_channel), dtype=self.source_dtype)])
                 setattr(self, attrName, expandedArr)
             for attrName in ['centroids_median', 'centroids_mean']:
-                expandedArr = np.concatenate([getattr(self, attrName), np.zeros((1, n_right - n_left, self.nb_channel), dtype=self.source_dtype)])
+                expandedArr = np.concatenate(
+                    [getattr(self, attrName),
+                    np.zeros((1, n_right - n_left, self.nb_channel), dtype=self.source_dtype)])
                 setattr(self, attrName, expandedArr)
             ##
             self.refresh_colors()
-            self.new_cluster.emit()
+            self.new_cluster.emit(newClusterLabel)
         else:
             mask = (self.clusters[self.unique_stim_param_names] == stim_packet[self.unique_stim_param_names])
             assert mask.sum() == 1
@@ -274,6 +279,9 @@ class RippleTriggerAccumulator(TriggerAccumulator):
             inter_trig_intervals = np.concatenate([[self.debounce_timestamps], np.diff(trig_timestamps)])
         else:
             inter_trig_intervals = np.diff(np.concatenate([[self.last_trigger_timestamp], trig_timestamps]))
+            if inter_trig_intervals[0] >= self.debounce_timestamps:
+                # we are going to trigger on the first timestamp
+                inter_trig_intervals[0] = self.debounce_timestamps
         # count the number of times we rolled over past the debounce threshold
         div_result = np.cumsum(inter_trig_intervals) // self.debounce_timestamps
         ##
@@ -320,7 +328,6 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         # if LOGGING:
         #     logger.info(f'on limit reached: {limit_index-self.size}:{limit_index}')
         arr = self.get_signals_chunk(i_start=limit_index-self.size, i_stop=limit_index)
-        pdb.set_trace()
         if arr is not None:
             self.stack.new_chunk(arr.reshape(1, (self.limit2 - self.limit1) * self.nb_channel))
 
@@ -521,7 +528,11 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         med = np.nanmedian(wf, axis=0)
         med[np.isnan(med)] = 0.
         mad = np.nanmedian(np.abs(wf - med),axis=0) * 1.4826
-        mad[mad == 0. | np.isnan(mad)] = 1.
+        try:
+            mad[(mad == 0) | np.isnan(mad)] = 1.
+        except:
+            traceback.print_exc()
+            pdb.set_trace()
         
         '''
         print(
@@ -546,7 +557,6 @@ class RippleTriggerAccumulator(TriggerAccumulator):
             self.compute_one_centroid(k, flush=False, n_spike_for_centroid=n_spike_for_centroid)
         
     def compute_all_centroid(self, n_spike_for_centroid=None):
-        
         self.make_centroids()
         self.compute_several_centroids(self.positive_cluster_labels, n_spike_for_centroid=n_spike_for_centroid)
 
@@ -566,20 +576,20 @@ class RippleTriggerAccumulator(TriggerAccumulator):
                 n = int(n1*n2)
                 n1, n2 = int(n1), int(n2)
         else:
-            n = np.sum((self.clusters['cluster_label']>=0) & (self.clusters['color']==0))
+            n = np.sum((self.clusters['cluster_label'] >= 0) & (self.clusters['color'] == 0))
 
         if n>0:
             colors_int32 = get_color_palette(n, palette=palette, output='int32')
             
-            if reset and interleaved and n>1:
+            if reset and interleaved and n > 1:
                 colors_int32 = colors_int32.reshape(n1, n2).T.flatten()
                 colors_int32 = colors_int32[:labels.size]
             
             if reset:
-                mask = self.clusters['cluster_label']>=0
+                mask = self.clusters['cluster_label'] >= 0
                 self.clusters['color'][mask] = colors_int32
             else:
-                mask = (self.clusters['cluster_label']>=0) & (self.clusters['color']==0)
+                mask = (self.clusters['cluster_label'] >= 0) & (self.clusters['color'] == 0)
                 self.clusters['color'][mask] = colors_int32
         
         #Make colors accessible by key
@@ -594,6 +604,8 @@ class RippleCatalogueController(ControllerBase):
         
         self.dataio = dataio
 
+        self.dataio.trig_poller.new_data.connect(self.update_visible_spikes)
+
         if chan_grp is None:
             chan_grp = 0
         self.chan_grp = chan_grp
@@ -605,33 +617,32 @@ class RippleCatalogueController(ControllerBase):
 
         self.init_plot_attributes()
 
-        self.dataio.new_cluster.connect(self.init_plot_attributes)
+        self.dataio.new_cluster.connect(self.check_plot_attributes)
 
     def init_plot_attributes(self):
-        self.cluster_visible = {k: True for i, k in enumerate(self.cluster_labels)}
-        self.do_cluster_count()
+        self.cluster_visible = {k: k >= 0 for k in self.cluster_labels}
         self.spike_selection = np.zeros(self.dataio.nb_peak, dtype='bool')
-        self.spike_visible = np.ones(self.dataio.nb_peak, dtype='bool')
-        self.refresh_colors(reset=False)
+        self.spike_visible = self.dataio.all_peaks['cluster_label'].flatten() >= 0
         self.check_plot_attributes()
     
     def check_plot_attributes(self):
-        #cluster visibility
+        # cluster visibility
         for k in self.cluster_labels:
             if k not in self.cluster_visible:
                 self.cluster_visible[k] = True
         for k in list(self.cluster_visible.keys()):
-            if k not in self.cluster_labels and k>=0:
+            if k not in self.cluster_labels and k >= 0:
                 self.cluster_visible.pop(k)
-        for code in [labelcodes.LABEL_UNCLASSIFIED,]:
-                if code not in self.cluster_visible:
-                    self.cluster_visible[code] = True
+        for code in [labelcodes.LABEL_UNCLASSIFIED, labelcodes.LABEL_TRASH]:
+            if code not in self.cluster_visible:
+                self.cluster_visible[code] = False
         self.refresh_colors(reset=False)
         self.do_cluster_count()
     
     def do_cluster_count(self):
-        self.cluster_count = { c['cluster_label']:c['nb_peak'] for c in self.clusters}
-        self.cluster_count[labelcodes.LABEL_UNCLASSIFIED] = 0
+        self.cluster_count = {c['cluster_label']: c['nb_peak'] for c in self.clusters}
+        for code in [labelcodes.LABEL_UNCLASSIFIED, labelcodes.LABEL_TRASH]:
+            self.cluster_count[code] = 0
     
     def reload_data(self):
         self.dataio.compute_all_centroid()
@@ -656,7 +667,7 @@ class RippleCatalogueController(ControllerBase):
     
     @property
     def positive_cluster_labels(self):
-        return self.cluster_labels[self.cluster_labels >= 0] 
+        return self.cluster_labels[self.cluster_labels >= 0]
     
     @property
     def cell_labels(self):
@@ -721,7 +732,7 @@ class RippleCatalogueController(ControllerBase):
         else:
             return None
         
-    def refresh_colors(self, reset=True, palette = 'Set3'):
+    def refresh_colors(self, reset=True, palette='Set3'):
         self.dataio.refresh_colors(reset=reset, palette=palette)
         
         self.qcolors = {}
@@ -730,7 +741,7 @@ class RippleCatalogueController(ControllerBase):
             self.qcolors[k] = QT.QColor(r*255, g*255, b*255)
 
     def update_visible_spikes(self):
-        visibles = np.array([k for k, v in self.cluster_visible.items() if v ])
+        visibles = np.array([k for k, v in self.cluster_visible.items() if v])
         self.spike_visible[:] = np.in1d(self.spike_label, visibles)
 
     def on_cluster_visibility_changed(self):
@@ -760,6 +771,15 @@ class RippleCatalogueController(ControllerBase):
             wf_min = 0.
             wf_max = 0.
         return wf_min, wf_max
+
+    def get_min_max_dispersions(self):
+        if self.dataio.centroids_mad is not None and self.dataio.centroids_mad.size > 0:
+            mad_min = self.dataio.centroids_mad.min()
+            mad_max = self.dataio.centroids_mad.max()
+        else:
+            mad_min = 0.
+            mad_max = 0.
+        return mad_min, mad_max
     
     @property
     def cluster_similarity(self):
@@ -776,7 +796,7 @@ class RippleCatalogueController(ControllerBase):
 class RippleTriggeredWindow(QT.QMainWindow):
 
     def __init__(
-            self, dataio=None, speed=5.,
+            self, dataio=None, speed=2.,
             window_title="Triggered signal viewer"):
         QT.QMainWindow.__init__(self)
 
@@ -790,14 +810,13 @@ class RippleTriggeredWindow(QT.QMainWindow):
         self.peaklist = OnlinePeakList(controller=self.controller)
         self.waveformviewer = RippleWaveformViewer(controller=self.controller)
 
-        
         docks = {}
 
         docks['waveformviewer'] = QT.QDockWidget('waveformviewer', self)
         docks['waveformviewer'].setWidget(self.waveformviewer)
         self.addDockWidget(QT.Qt.RightDockWidgetArea, docks['waveformviewer'])
 
-        self.dataio.new_cluster.connect(self.waveformviewer.initialize_plot)
+        self.dataio.new_cluster.connect(self.waveformviewer.add_blank_curve)
         
         docks['clusterlist'] = QT.QDockWidget('stim pattern list', self)
         docks['clusterlist'].setWidget(self.clusterlist)
@@ -828,6 +847,9 @@ class RippleTriggeredWindow(QT.QMainWindow):
             thisQSizePolicy.setHorizontalStretch(1)
             docks[dockName].setSizePolicy(thisQSizePolicy)
             docks[dockName].setMinimumSize(thisQSize.width(), thisQSize.height())'''
+
+        '''thisQSize = self.sizeHint()
+        self.resize(int(1.4 * thisQSize.width()), int(1.4 * thisQSize.height()))'''
 
         self.speed = speed # Hz
         self.timer = RefreshTimer(interval=self.speed ** -1, node=self)
@@ -862,10 +884,18 @@ class RippleTriggeredWindow(QT.QMainWindow):
     
     def refresh_with_reload(self):
         self.controller.reload_data()
+
+        self.waveformviewer.recalc_y_range()
+        self.waveformviewer.reset_y_factor()
+        self.waveformviewer.clear_plots()
+        
+        self.peaklist.tree.selectionModel().clearSelection()
+
+        print(f"waveformviewer.factor_y = {self.waveformviewer.factor_y}")
+
         self.refresh()
     
     def refresh(self):
-        # self.controller.check_plot_attributes()
         '''
         for w in self.controller.views:
             #TODO refresh only visible but need catch on visibility changed

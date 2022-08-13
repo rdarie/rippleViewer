@@ -42,12 +42,12 @@ class OnlinePeakModel(QT.QAbstractItemModel):
             self.visible_ind, = np.nonzero(self.controller.spike_visible)
             n = self.visible_ind.size
             return n
-        else :
+        else:
             return 0
         
     def index(self, row, column, parentIndex):
         if not parentIndex.isValid():
-            if column==0:
+            if column == 0:
                 childItem = row
             return self.createIndex(row, column, None)
         else:
@@ -65,17 +65,19 @@ class OnlinePeakModel(QT.QAbstractItemModel):
         
         col = index.column()
         row = index.row()
+
         #~ ind = self.visible_peak_labels.index[row]
         #~ label =  self.visible_peak_labels.iloc[row]
         #~ t_start = 0.
         
         abs_ind = self.visible_ind[row]
         # seg_num = self.controller.spike_segment[abs_ind]
+
         peak_pos = self.controller.spike_index[abs_ind]
         peak_time = peak_pos / self.sample_rate
         peak_label = self.controller.spike_label[abs_ind]
-        peak_chan = self.controller.spike_channel[abs_ind]
-        peak_ampl = self.controller.spikes[abs_ind]['extremum_amplitude']
+        # peak_chan = self.controller.spike_channel[abs_ind]
+        # peak_ampl = self.controller.spikes[abs_ind]['extremum_amplitude']
         
         
         if role == QT.Qt.DisplayRole:
@@ -113,9 +115,9 @@ class OnlinePeakModel(QT.QAbstractItemModel):
         return
     
     def refresh_colors(self):
-        self.icons = { }
+        self.icons = {}
         for k in self.controller.qcolors:
-            color = self.controller.qcolors.get(k, QT.QColor( 'white'))
+            color = self.controller.qcolors.get(k, QT.QColor('white'))
             pix = QT.QPixmap(10, 10)
             pix.fill(color)
             self.icons[k] = QT.QIcon(pix)
@@ -165,7 +167,7 @@ class OnlinePeakList(WidgetBase):
         self.layout.addWidget(self.tree)
         # self.tree.customContextMenuRequested.connect(self.open_context_menu)
         
-        self.model = OnlinePeakModel(controller = controller)
+        self.model = OnlinePeakModel(controller=controller)
         self.tree.setModel(self.model)
         self.tree.selectionModel().selectionChanged.connect(self.on_tree_selection)
 
@@ -291,7 +293,9 @@ class OnlineClusterBaseList(WidgetBase):
         self.table.itemChanged.disconnect(self.on_item_changed)
         
         self.table.clear()
-        labels = [pretty_names.get(label, label) for label in self.labels_in_table]
+        labels = [
+            pretty_names.get(label, label)
+            for label in self.labels_in_table]
 
         self.table.setColumnCount(len(labels))
         self.table.setHorizontalHeaderLabels(labels)
@@ -308,6 +312,7 @@ class OnlineClusterBaseList(WidgetBase):
         
         clusters = self.controller.clusters
         clusters = clusters[clusters['cluster_label'] >= 0]
+
         if sort_mode=='label':
             order =np.arange(clusters.size)
         elif sort_mode=='channel':
@@ -344,7 +349,7 @@ class OnlineClusterBaseList(WidgetBase):
             if 'show/hide' in self.labels_in_table:
                 item_index = self.labels_in_table.index('show/hide')
                 item = QT.QTableWidgetItem('')
-                item.setFlags(QT.Qt.ItemIsEnabled|QT.Qt.ItemIsSelectable|QT.Qt.ItemIsUserCheckable)
+                item.setFlags(QT.Qt.ItemIsEnabled | QT.Qt.ItemIsSelectable | QT.Qt.ItemIsUserCheckable)
                 
                 item.setCheckState(checkboxLookup[self.controller.cluster_visible.get(k, False)])
                 self.table.setItem(i, item_index, item)
@@ -469,7 +474,7 @@ class OnlineClusterPeakList(OnlineClusterBaseList):
       * -9 Alien
 
     """
-    _special_label = [labelcodes.LABEL_UNCLASSIFIED]
+    _special_label = [labelcodes.LABEL_UNCLASSIFIED, labelcodes.LABEL_TRASH]
 
     def make_menu(self):
         self.menu = QT.QMenu()
@@ -525,7 +530,7 @@ class OnlineClusterPeakList(OnlineClusterBaseList):
             {'name': 'color', 'type': 'color', 'value': color},
             {'name': 'annotations', 'type': 'str', 'value': annotations},
             {'name': 'tag', 'type': 'list', 'value': tag, 'values':gui_params.possible_tags},
-        ]        
+            ]
         
         dia = ParamDialog(params_, title = 'Cluster {}'.format(k), parent=self)
         if dia.exec_():

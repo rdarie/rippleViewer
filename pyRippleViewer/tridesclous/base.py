@@ -83,6 +83,7 @@ class ControllerBase(QT.QObject):
 
 
 class WidgetBase(QT.QWidget):
+
     spike_selection_changed = QT.pyqtSignal()
     spike_label_changed = QT.pyqtSignal()
     colors_changed = QT.pyqtSignal()
@@ -112,7 +113,7 @@ class WidgetBase(QT.QWidget):
         self.tree_params = pg.parametertree.ParameterTree(parent=self)
         self.tree_params.header().hide()
         self.tree_params.setParameters(self.params, showTop=True)
-        self.tree_params.setWindowTitle(u'Options for waveformviewer')
+        self.tree_params.setWindowTitle(u'Settings')
         self.tree_params.setWindowFlags(QT.Qt.Window)
         
         self.params.sigTreeStateChanged.connect(self.on_params_changed)
