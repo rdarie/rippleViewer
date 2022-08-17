@@ -28,12 +28,15 @@ parser.add_argument('-ip', '--server_ip', required=False, help="Sets the server'
 parser.add_argument('-p', '--server_port', required=False, help="Sets the server's IP address")
 parser.add_argument('-pyacq_ip', '--pyacq_server_ip', required=False, help="Sets the server's IP address")
 parser.add_argument('-pyacq_p', '--pyacq_server_port', required=False, help="Sets the server's IP address")
+parser.add_argument('-d', '--debug', required=False, type=bool, default=False, help="Flag that bypasses xipppy connection")
 args = parser.parse_args()
 
-webSocketConfOpts = dict(
-    # server_ip='10.9.145.31', server_port=7890
-    server_ip='192.168.42.1', server_port=7890
-    )
+webSocketConfOpts = dict(server_port=7890)
+if args.debug:
+    webSocketConfOpts['server_ip'] = '10.9.145.31'
+else:
+    webSocketConfOpts['server_ip'] = '192.168.42.1'
+
 if args.server_ip is not None:
     webSocketConfOpts['server_ip'] = args.server_ip
 if args.server_port is not None:

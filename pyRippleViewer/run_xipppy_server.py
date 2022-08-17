@@ -13,7 +13,8 @@ usage = """Usage:
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-pyacq_ip', '--pyacq_server_ip', required=False, help="Sets the server's IP address")
-parser.add_argument('-pyacq_p', '--pyacq_server_port', required=False, help="Sets the server's IP address")
+parser.add_argument('-pyacq_p', '--pyacq_server_port', required=False, help="Sets the server's port")
+parser.add_argument('-d', '--debug', required=False, type=bool, default=False, help="Flag that bypasses xipppy connection")
 args = parser.parse_args()
 
 pyacqServerOpts = dict(
@@ -23,6 +24,7 @@ if args.pyacq_server_ip is not None:
     pyacqServerOpts['ip'] = args.pyacq_server_ip
 if args.pyacq_server_port is not None:
     pyacqServerOpts['port'] = args.pyacq_server_port
+
 rpc_addr = f"tcp://{pyacqServerOpts['ip']}:{pyacqServerOpts['port']}"
 
 def main():
@@ -36,7 +38,8 @@ def main():
     print("Running server at: %s" % server.address.decode())
 
     # Create a xipppy buffer node
-    dev = pyacq.XipppyTxBuffer(name='nip0', dummy=False)
+            
+    dev = pyacq.XipppyTxBuffer(name='nip0', dummy=args.debug)
     server['nip0'] = dev
 
     requestedChannels = {
@@ -45,10 +48,14 @@ def main():
         # 'stim': [chIdx for chIdx in range(0, 8)],
         }
 
+    mapFileName = 'dummy'
+    mapFilePath = f'./ripple_map_files/{mapFileName}.map'
+
     dev.configure(
         sample_interval_sec=100e-3, sample_chunksize_sec=100e-3,
-        buffer_size_sec=20.,
+        buffer_size_sec=20., mapFilePath=mapFilePath,
         channels=requestedChannels, verbose=False, debugging=False)
+
     print(f'dev.present_analogsignal_types = {dev.present_analogsignal_types}')
     for signalType in pyacq.ripple_signal_types:
         dev.outputs[signalType].configure(

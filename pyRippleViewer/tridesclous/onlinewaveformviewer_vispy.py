@@ -1,5 +1,5 @@
-from ephyviewer.myqt import QT, QT_LIB
-from pyqtgraph.util.mutex import Mutex
+from ephyviewer.myqt import QT
+# from pyqtgraph.util.mutex import Mutex
 from contextlib import nullcontext
 import numpy as np
 from pyRippleViewer.tridesclous.base import WidgetBase
@@ -186,7 +186,7 @@ class WaveformViewerBase(WidgetBase):
             if param.name() == 'individual_spikes_num':
                 self.initialize_plot()
             if param.name() == 'debounce_sec':
-                print(f"param_change_data = {data}")
+                # print(f"param_change_data = {data}")
                 self.controller.dataio.set_debounce(data)
             if param.name() in dataio_param_names:
                 self.controller.dataio.params[param.name()] = data

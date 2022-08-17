@@ -7,6 +7,7 @@ from ephyviewer.myqt import QT, QT_LIB
 import pyacq
 
 from .tridesclous import *
+from .probe_metadata import *
 
 if sys.platform == 'win32':
     import ctypes

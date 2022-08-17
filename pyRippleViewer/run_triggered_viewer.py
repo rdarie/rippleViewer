@@ -48,10 +48,20 @@ def main():
 
     signalTypeToPlot = 'hifreq' # ['hi-res', 'hifreq', 'stim']
 
-    channel_info = txBuffer.outputs['hi-res'].params['channel_info']
+    '''mapFileName = 'dummy'
+    if mapFileName is not None:
+        electrodeMapDF = mapToDF(f'./ripple_map_files/{mapFileName}.map')
+        channel_group = {
+            'channels': [idx for idx, item in enumerate(channel_info)],
+            'geometry': [[100 * (idx % 3 - 1), 100 * idx] for idx, item in enumerate(channel_info)]
+            }'''
+
+    channel_info = txBuffer.outputs['hifreq'].params['channel_info']
     channel_group = {
-        'channels': [idx for idx, item in enumerate(channel_info)],
-        'geometry': [[100 * (idx % 3 - 1), 100 * idx] for idx, item in enumerate(channel_info)]
+        'channels': [idx for idx in range(len(channel_info))],
+        'geometry': [
+            (int(entry['xcoords'] / 100), int(entry['ycoords'] / 100))
+            for entry in channel_info]
         }
 
     triggerAcc = RippleTriggerAccumulator()

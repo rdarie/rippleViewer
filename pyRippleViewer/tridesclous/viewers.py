@@ -891,7 +891,7 @@ class RippleTriggeredWindow(QT.QMainWindow):
         
         self.peaklist.tree.selectionModel().clearSelection()
 
-        print(f"waveformviewer.factor_y = {self.waveformviewer.factor_y}")
+        # print(f"waveformviewer.factor_y = {self.waveformviewer.factor_y}")
 
         self.refresh()
     
@@ -907,8 +907,10 @@ class RippleTriggeredWindow(QT.QMainWindow):
 
     def closeEvent(self, event):
         self.timer.stop()
+        # 
         # self.thread.quit()
         # self.thread.wait()
+        # 
         self.controller.dataio.stop()
         self.controller.dataio.close()
         event.accept()
