@@ -78,8 +78,10 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         {'name': 'stack_size', 'type' :'int', 'value' : 500,  'limits':[1, np.inf] },
         ]
     
-    unique_stim_param_names = ['elecCath', 'elecAno', 'amp', 'freq', 'pulseWidth', 'amp_steps', 'stim_res']
-    new_chunk = QT.pyqtSignal(int)
+    unique_stim_param_names = [
+        'elecCath', 'elecAno', 'amp', 'freq', 'pulseWidth', 'amp_steps', 'stim_res']
+    
+    new_spikes = QT.pyqtSignal()
     new_cluster = QT.pyqtSignal(int)
     
     def __init__(
@@ -322,6 +324,7 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         data['segment'] = 0
         self.clusters['nb_peak'][self.clusters['cluster_label'] == self.current_stim_cluster['cluster_label']] += data.shape[0]
         self._all_peaks_buffer.new_chunk(data[:, None])
+        self.new_spikes.emit()
         return
 
     def on_limit_reached(self, limit_index):
@@ -796,17 +799,21 @@ class RippleCatalogueController(ControllerBase):
 class RippleTriggeredWindow(QT.QMainWindow):
 
     def __init__(
-            self, dataio=None, speed=2.,
+            self, dataio=None, refreshRateHz=2.,
             window_title="Triggered signal viewer"):
         QT.QMainWindow.__init__(self)
 
-        self.dataio = dataio
         self.window_title = window_title
         self.setWindowTitle(self.window_title)
+
+        self.refreshRateHz = refreshRateHz # Hz
+
+        self.dataio = dataio
         
         self.controller = RippleCatalogueController(dataio=dataio)
 
-        self.clusterlist = OnlineClusterPeakList(controller=self.controller)
+        self.clusterlist = OnlineClusterPeakList(
+            controller=self.controller, refreshRateHz=refreshRateHz)
         self.peaklist = OnlinePeakList(controller=self.controller)
         self.waveformviewer = RippleWaveformViewer(controller=self.controller)
 
@@ -851,16 +858,15 @@ class RippleTriggeredWindow(QT.QMainWindow):
         '''thisQSize = self.sizeHint()
         self.resize(int(1.4 * thisQSize.width()), int(1.4 * thisQSize.height()))'''
 
-        self.speed = speed # Hz
-        self.timer = RefreshTimer(interval=self.speed ** -1, node=self)
-        self.timer.timeout.connect(self.refresh)
-
+        # self.timer = RefreshTimer(interval=self.refreshRateHz ** -1, node=self)
+        
         for view in self.controller.views:
-            self.timer.timeout.connect(view.refresh)
+            self.dataio.new_spikes.connect(view.refresh)
+            # self.timer.timeout.connect(view.refresh)
 
 
     def start_refresh(self):
-        self.timer.start()
+        # self.timer.start()
         # self.thread.start()
         pass
         
@@ -884,29 +890,15 @@ class RippleTriggeredWindow(QT.QMainWindow):
     
     def refresh_with_reload(self):
         self.controller.reload_data()
-
+        #
         self.waveformviewer.recalc_y_range()
         self.waveformviewer.reset_y_factor()
         self.waveformviewer.clear_plots()
-        
         self.peaklist.tree.selectionModel().clearSelection()
-
         # print(f"waveformviewer.factor_y = {self.waveformviewer.factor_y}")
-
-        self.refresh()
     
-    def refresh(self):
-        '''
-        for w in self.controller.views:
-            #TODO refresh only visible but need catch on visibility changed
-            #~ print(w)
-            #~ t1 = time.perf_counter()
-            w.refresh()
-            '''
-        pass
-
     def closeEvent(self, event):
-        self.timer.stop()
+        # self.timer.stop()
         # 
         # self.thread.quit()
         # self.thread.wait()

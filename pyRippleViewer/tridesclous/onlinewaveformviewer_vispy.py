@@ -19,8 +19,13 @@ import pdb
 
 class WaveformViewerBase(WidgetBase):
 
-    def __init__(self, controller=None, parent=None):
+    def __init__(
+            self, controller=None, parent=None, refreshRateHz=1.):
+
         WidgetBase.__init__(self, parent=parent, controller=controller)
+        self.refreshRateHz = refreshRateHz # Hz
+        self.tNextRefresh = None
+
         self.sample_rate = self.controller.dataio.sample_rate
         self.layout = QT.QVBoxLayout()
         self.setLayout(self.layout)
@@ -203,7 +208,10 @@ class WaveformViewerBase(WidgetBase):
     def refresh(self, keep_range=True):
         # if LOGGING: logger.info(f'WaveformViewer.refresh {self.sender()}')
         with self.lock:
-            self._refresh(keep_range=keep_range)
+            tNow = time.time()
+            if tNow >= self.tNextRefresh:
+                self._refresh(keep_range=keep_range)
+                self.tNextRefresh = time.time() + (self.refreshRateHz ** (-1))
 
     def clear_plots(self):
         with self.lock:
@@ -247,7 +255,6 @@ class WaveformViewerBase(WidgetBase):
         curve_p2.visible = (self.mode == 'flatten')
         self.curves_mad_plot2.append(curve_p2)
 
-    
     def reset_y_factor(self):
 
         if self.wf_min == 0 and self.wf_max == 0:
@@ -577,6 +584,10 @@ class WaveformViewerBase(WidgetBase):
                 self.recalc_y_range()
                 self.viewbox1.camera.set_range(
                     x=self._x_range, y=self._y1_range, margin=0.)
+        
+        # self.tNextRefresh = time.time() + (self.refreshRateHz ** (-1))
+        self.tNextRefresh = time.time()
+        return
 
     def _refresh(self, keep_range=False):
         #

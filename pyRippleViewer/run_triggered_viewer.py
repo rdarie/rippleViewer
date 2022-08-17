@@ -71,7 +71,7 @@ def main():
     triggerAcc.inputs['stim_packets'].connect(stimPacketBuffer.outputs['stim_packets'])
 
     triggerAcc.initialize()
-    win = RippleTriggeredWindow(triggerAcc)
+    win = RippleTriggeredWindow(triggerAcc, refreshRateHz=10)
     win.show()
     
     # start nodes
