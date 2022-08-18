@@ -26,224 +26,14 @@ pretty_names = {
     'pulseWidth': 'pulse width (usec)',
     'amp': 'stim. amplitude (uA)',
     'freq': 'stim. frequency (Hz)',
-    'time': 'time (sec)'
+    'time': 'time (sec)',
+    'nb_peak': 'num. events'
     }
 
 pretty_names_reverse = {}
 for key, value in pretty_names.items():
     pretty_names_reverse[value] = key
 
-'''
-class OnlinePeakModel(QT.QAbstractItemModel):
-    # see https://doc.qt.io/qtforpython/overviews/model-view-programming.html
-    labels_in_table = ['time', 'cluster_label']
-
-    def __init__(
-            self, parent=None, controller=None):
-        QT.QAbstractItemModel.__init__(self, parent)
-        self.controller = controller
-        self.sample_rate = self.controller.dataio.sample_rate
-        self.refresh_colors()
-    
-    def columnCount(self, parentIndex):
-        return len(self.labels_in_table)
-        
-    def rowCount(self, parentIndex):
-        # print(f"rowCount: parentIndex = {parentIndex}")
-        if (not parentIndex.isValid()) and (self.controller.spike_label is not None):
-            self.visible_ind, = np.nonzero(self.controller.spike_visible)
-            n = self.visible_ind.size
-            return n
-        else:
-            return 0
-        
-    def index(self, row, column, parentIndex):
-        if (not parentIndex.isValid()):
-            if column == 0:
-                childItem = row
-            return self.createIndex(row, column, None)
-        else:
-            return QT.QModelIndex()
-    
-    def parent(self, index):
-        return QT.QModelIndex()
-    
-    def data(self, index, role):
-
-        if not index.isValid():
-            return None
-        
-        if role not in (QT.Qt.DisplayRole, QT.Qt.DecorationRole):
-            return
-        
-        col = index.column()
-        row = index.row()
-
-        abs_ind = self.visible_ind[row]
-        peak_pos = self.controller.spike_index[abs_ind]
-        peak_time = peak_pos / self.sample_rate
-        peak_label = self.controller.spike_label[abs_ind]
-        
-        if role == QT.Qt.DisplayRole:
-            if col == 0:
-                return f'{peak_time:.3f}'
-            elif col == 1:
-                return f'{peak_label}'
-            else:
-                return None
-    
-        elif role == QT.Qt.DecorationRole:
-            if col != 0: return None
-            if peak_label in self.icons:
-                return self.icons[peak_label]
-            else:
-                return None
-        else :
-            return None
-    
-    def flags(self, index):
-        if not index.isValid():
-            return QT.Qt.NoItemFlags
-        return QT.Qt.ItemIsEnabled | QT.Qt.ItemIsSelectable #| Qt.ItemIsDragEnabled
-
-    def headerData(self, section, orientation, role):
-        if orientation == QT.Qt.Horizontal and role == QT.Qt.DisplayRole:
-            return pretty_names.get(self.labels_in_table[section], self.labels_in_table[section])
-        return
-    
-    def refresh_colors(self):
-        self.icons = {}
-        for k in self.controller.qcolors:
-            color = self.controller.qcolors.get(k, QT.QColor('white'))
-            pix = QT.QPixmap(10, 10)
-            pix.fill(color)
-            self.icons[k] = QT.QIcon(pix)
-        self.layoutChanged.emit()
-
-    def reset(self):
-        if self.controller.spike_label is not None:
-            self.beginResetModel()
-            self.beginRemoveRows()
-            self.visible_ind, = np.nonzero(self.controller.spike_visible)
-        pass
-
-class OnlinePeakList(WidgetBase):
-    """
-    **Peak List** show all detected peak for the catalogue construction.
-    
-    Here pintentionally peaks are not spikes already (even most of them are spikes)
-    because supperposition of spikes are done here in catalogue in Peeler.
-    
-    Note:
-      * If there are to many peaks, not all of them will have a extracted waveform.
-        This why some peak are not labeled (-10) and nb_peak != nb_wveforms
-        sometimes.
-      * Peaks can belong to diffrents segment, a column indicate it. This is th full list
-        of all peaks of all segment.
-      * A right click open a ontext menu:
-        * move one or several selected spike to trash
-        * create a new cluster with one or several spikes
-      * When you select one spike, this will auto zoom on **Trace View**,  auto select
-        the appriopriate segment and hilight the point on **ND Scatetr**. And vice versa.
-    """
-
-    labels_in_table = []
-
-    def __init__(
-            self, controller=None, parent=None, refreshRateHz=1.):
-        WidgetBase.__init__(self, parent=parent, controller=controller)
-        
-        self.layout = QT.QVBoxLayout()
-        self.setLayout(self.layout)
-        
-        self.label_title = QT.QLabel('')
-        self.layout.addWidget(self.label_title)
-        
-        self.tree = QT.QTreeView(
-            uniformRowHeights = True,
-            selectionMode = QT.QAbstractItemView.ExtendedSelection,
-            selectionBehavior = QT.QTreeView.SelectRows,
-            contextMenuPolicy = QT.Qt.CustomContextMenu,)
-        
-        self.layout.addWidget(self.tree)
-        # self.tree.customContextMenuRequested.connect(self.open_context_menu)
-        
-        self.model = OnlinePeakModel(controller=controller)
-        self.tree.setModel(self.model)
-        self.tree.selectionModel().selectionChanged.connect(self.on_tree_selection)
-
-        # This is very slow!!!!!
-        #~ for i in range(self.model.columnCount(None)):
-            #~ print(i)
-            #~ self.tree.resizeColumnToContents(i)
-
-        # adjust widget size
-        thisQSize = self.sizeHint()
-        thisQSizePolicy = self.sizePolicy()
-        #
-        thisQSizePolicy.setHorizontalPolicy(QT.QSizePolicy.Preferred)
-        thisQSizePolicy.setVerticalPolicy(QT.QSizePolicy.Preferred)
-        thisQSizePolicy.setHorizontalStretch(1)
-        thisQSizePolicy.setVerticalStretch(3)
-        #
-        self.setSizePolicy(thisQSizePolicy)
-        self.setMinimumSize(thisQSize.width(), thisQSize.height())
-        # self.setMaximumSize(int(1.2 * thisQSize.width()), int(1.2 * thisQSize.height()))
-
-        # self.tree.setColumnWidth(0, 100)
-        # self.setMinimumWidth(100)
-        
-        self.refresh()
-    
-    def _refresh(self):
-        self.model.refresh_colors()
-        # nb_peak = self.controller.spikes.size
-        # if self.controller.some_peaks_index is not None:
-        #     nb_sampled = self.controller.some_peaks_index.shape[0]
-        # else:
-        #     nb_sampled = 0
-        # self.label_title.setText('<b>All peaks {} - Nb sampled {}</b>'.format(nb_peak, nb_sampled))
-    
-    def on_tree_selection(self):
-        # print('on_tree_selection')
-        self.controller.spike_selection[:] = False
-        for index in self.tree.selectedIndexes():
-            if index.column() == 0:
-                ind = self.model.visible_ind[index.row()]
-                self.controller.spike_selection[ind] = True
-        self.spike_selection_changed.emit()
-    
-    def on_spike_selection_changed(self):
-        self.tree.selectionModel().selectionChanged.disconnect(self.on_tree_selection)
-        
-        row_selected, = np.nonzero(self.controller.spike_selection[self.model.visible_ind])
-        
-        if row_selected.size > 100: #otherwise this is verry slow
-            row_selected = row_selected[:10]
-        
-        # change selection
-        self.tree.selectionModel().clearSelection()
-        flags = QT.QItemSelectionModel.Select # | QItemSelectionModel.Rows
-        itemsSelection = QT.QItemSelection()
-        for r in row_selected:
-            for c in range(2):
-                index = self.tree.model().index(r, c, QT.QModelIndex())
-                ir = QT.QItemSelectionRange(index)
-                itemsSelection.append(ir)
-        self.tree.selectionModel().select(itemsSelection, flags)
-
-        # set selection visible
-        if len(row_selected) >= 1:
-            index = self.tree.model().index(
-                row_selected[0], 0, QT.QModelIndex())
-            self.tree.scrollTo(index)
-
-        self.tree.selectionModel().selectionChanged.connect(self.on_tree_selection)
-    
-    def on_cluster_visibility_changed(self):
-        print('peaklist.on_cluster_visibility_changed')
-        self.model.reset()
-    '''
 
 class OnlinePeakListSimple(WidgetBase):
     """
@@ -253,8 +43,9 @@ class OnlinePeakListSimple(WidgetBase):
     labels_in_table = ['time', 'cluster_label']
 
     def __init__(
-            self, controller=None, parent=None, refreshRateHz=1.):
-        WidgetBase.__init__(self, parent=parent, controller=controller)
+            self, controller=None, parent=None,
+            refreshRateHz=1., order='decreasing'):
+        WidgetBase.__init__(self, parent=parent, controller=controller, refreshRateHz=refreshRateHz)
 
         self.refresh_colors()
         
@@ -279,6 +70,8 @@ class OnlinePeakListSimple(WidgetBase):
         #
         self.setSizePolicy(thisQSizePolicy)
         self.setMinimumSize(thisQSize.width(), thisQSize.height())
+        #
+        self.rowOrder = order
         
     def refresh_colors(self):
         self.icons = {}
@@ -287,6 +80,12 @@ class OnlinePeakListSimple(WidgetBase):
             pix = QT.QPixmap(10, 10)
             pix.fill(color)
             self.icons[k] = QT.QIcon(pix)
+
+    def rowToSpikeIdx(self, row):
+        if self.rowOrder == 'increasing':
+            return self.visible_ind[row]
+        elif self.rowOrder == 'decreasing':
+            return self.visible_ind[-(row+1)]
 
     def _refresh(self):
         self.table.clear()
@@ -305,7 +104,9 @@ class OnlinePeakListSimple(WidgetBase):
         self.table.setRowCount(self.visible_ind.size)
         self.refresh_colors()
         #
-        for row, spikeIdx in enumerate(self.visible_ind):
+        # for row, spikeIdx in enumerate(self.visible_ind):
+        for row in range(self.visible_ind.size):
+            spikeIdx = self.rowToSpikeIdx(row)
             for label in self.labels_in_table:
                 col = self.labels_in_table.index(label)
                 if label == 'time':
@@ -315,8 +116,10 @@ class OnlinePeakListSimple(WidgetBase):
                 elif label == 'cluster_label':
                     thisClusterLabel = self.controller.all_peaks['cluster_label'][spikeIdx]
                     textEntry = f"{thisClusterLabel}"
+
                 item = QT.QTableWidgetItem(textEntry)
                 item.setFlags(QT.Qt.ItemIsEnabled | QT.Qt.ItemIsSelectable)
+
                 if col == 0:
                     k = self.controller.spikes['cluster_label'][spikeIdx]
                     item.setIcon(self.icons[k])
@@ -327,8 +130,8 @@ class OnlinePeakListSimple(WidgetBase):
         self.controller.spike_selection[:] = False
         for index in self.table.selectedIndexes():
             if index.column() == 0:
-                ind = self.visible_ind[index.row()]
-                self.controller.spike_selection[ind] = True
+                spikeIdx = self.rowToSpikeIdx(index.row()) # self.visible_ind[index.row()]
+                self.controller.spike_selection[spikeIdx] = True
         self.spike_selection_changed.emit()
     
     def on_spike_selection_changed(self):
@@ -342,7 +145,6 @@ class OnlinePeakListSimple(WidgetBase):
     
     def on_cluster_visibility_changed(self):
         self._refresh()
-        print('peaklistSimple.on_cluster_visibility_changed')
 
 
 class OnlineClusterList(WidgetBase):
@@ -385,11 +187,12 @@ class OnlineClusterList(WidgetBase):
     sort_by_names = [
         'cluster_label', 'amp', 'freq']
     labels_in_table = [
-        'cluster_label', 'show/hide', 'elecCath', 'elecAno', 'pulseWidth', 'amp', 'freq']
+        'cluster_label', 'show/hide', 'nb_peak', 'elecCath', 'elecAno', 'pulseWidth', 'amp', 'freq']
 
     def __init__(
             self, controller=None, parent=None, refreshRateHz=1.):
-        WidgetBase.__init__(self, parent=parent, controller=controller)
+        WidgetBase.__init__(
+            self, parent=parent, controller=controller, refreshRateHz=refreshRateHz)
         
         self.layout = QT.QVBoxLayout()
         self.setLayout(self.layout)
@@ -550,6 +353,7 @@ class OnlineClusterList(WidgetBase):
             self.cluster_visibility_changed.emit()
     
     def on_double_clicked(self, row, col):
+        self.controller.new_clusters_visible = False
         for k in self.controller.cluster_visible:
             self.controller.cluster_visible[k] = False
             
@@ -572,6 +376,7 @@ class OnlineClusterList(WidgetBase):
         self.menu.popup(self.cursor().pos())
 
     def show_all(self):
+        self.controller.new_clusters_visible = True
         for k in self.controller.cluster_visible:
             if k>=0:
                 self.controller.cluster_visible[k] = True
@@ -579,6 +384,7 @@ class OnlineClusterList(WidgetBase):
         self.cluster_visibility_changed.emit()
     
     def hide_all(self):
+        self.controller.new_clusters_visible = False
         for k in self.controller.cluster_visible:
             self.controller.cluster_visible[k] = False
         self.refresh()

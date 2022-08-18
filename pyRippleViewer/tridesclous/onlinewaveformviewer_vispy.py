@@ -1036,6 +1036,10 @@ class RippleWaveformViewer(WidgetBase):
                 
         if LOGGING: logger.info(f'Finished _refresh_mode_geometry...')
     
+    def on_spike_selection_changed(self):
+        if self.params['plot_individual_spikes'] == 'selected':
+            self._refresh()
+
     def _refresh_individual(self, n_selected):
         if LOGGING: logger.info('Starting _refresh_individual')
         # print('Starting _refresh_individual')

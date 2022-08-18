@@ -41,28 +41,17 @@ class ControllerBase(QT.QObject):
     def on_colors_changed(self):
         for view in self.views:
             if view==self.sender(): continue
-            #~ t1 = time.perf_counter()
             view.on_colors_changed()
-            #~ t2 = time.perf_counter()
-            #~ print('on_colors_changed',view,  t2-t1)
     
     def on_cluster_visibility_changed(self):
-        print('on_cluster_visibility_changed', self.cluster_visible)
         for view in self.views:
             if view==self.sender(): continue
-            #~ t1 = time.perf_counter()
             view.on_cluster_visibility_changed()
-            #~ t2 = time.perf_counter()
-            #~ print('on_cluster_visibility_changed',view,  t2-t1)
 
     def on_cluster_tag_changed(self):
-        print('on_cluster_tag_changed', self.cluster_visible)
         for view in self.views:
             if view==self.sender(): continue
-            #~ t1 = time.perf_counter()
             view.on_cluster_tag_changed()
-            #~ t2 = time.perf_counter()
-            #~ print('on_cluster_tag_changed',view,  t2-t1)
 
     @property
     def channel_indexes(self):

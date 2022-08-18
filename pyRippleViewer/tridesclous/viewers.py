@@ -170,6 +170,7 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         self.wait_thread_list = []
         self.remake_stack()
         self.last_trigger_timestamp = -1
+        self.last_unique_cluster_label = -1
 
         self.nb_segment = 1
         self.total_channel = self.nb_channel
@@ -232,12 +233,8 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         alreadySeen = stim_packet[self.unique_stim_param_names] in self.clusters[self.unique_stim_param_names]
         if not alreadySeen:
             newCluster = np.zeros((1,), dtype=_dtype_cluster)
-            lastClusterLabel = self.clusters['cluster_label'].max()
-            if lastClusterLabel >= 0:
-                newClusterLabel = lastClusterLabel + 1
-            else:
-                newClusterLabel = 0
-            newCluster['cluster_label'] = newClusterLabel
+            self.last_unique_cluster_label += 1
+            newCluster['cluster_label'] = self.last_unique_cluster_label
             newCluster[self.unique_stim_param_names] = stim_packet[self.unique_stim_param_names]
             self.current_stim_cluster = newCluster
             self.clusters = np.concatenate([self.clusters, newCluster])
@@ -258,7 +255,7 @@ class RippleTriggerAccumulator(TriggerAccumulator):
                 setattr(self, attrName, expandedArr)
             ##
             self.refresh_colors()
-            self.new_cluster.emit(newClusterLabel)
+            self.new_cluster.emit(self.last_unique_cluster_label)
         else:
             mask = (self.clusters[self.unique_stim_param_names] == stim_packet[self.unique_stim_param_names])
             assert mask.sum() == 1
@@ -506,8 +503,12 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         ind = np.nonzero(self.clusters['cluster_label'] == label)[0][0]
         return ind
 
-    def recalc_cluster_info(self):
-        # print(f'self.centroids_median = {self.centroids_median}')
+    def recalc_cluster_info(self, removeEmpty=False):
+        for k in self.cluster_labels:
+            self.clusters['nb_peak'][self.clusters['cluster_label'] == k] = (self.all_peaks['cluster_label'] == k).sum()
+        if removeEmpty:
+            mask = (self.clusters['cluster_label'] < 0) | (self.clusters['nb_peak'] <= 0)
+            self.clusters = self.clusters[mask]
         pass
 
     def compute_one_centroid(
@@ -631,20 +632,21 @@ class RippleCatalogueController(ControllerBase):
         self.dataio.new_cluster.connect(self.check_plot_attributes)
 
     def init_plot_attributes(self):
+        self.new_clusters_visible = True
         self.cluster_visible = {k: k >= 0 for k in self.cluster_labels}
         self.spike_selection = np.zeros(self.dataio.nb_peak, dtype='bool')
         self.spike_visible = self.dataio.all_peaks['cluster_label'].flatten() >= 0
         self.check_plot_attributes()
     
     def check_plot_attributes(self):
-        # cluster visibility
+        # align cluster visibility dict with cluster labels
         for k in self.cluster_labels:
             if k not in self.cluster_visible:
                 # k is a cluster label we've never seen before
-                self.cluster_visible[k] = (k >= 0)
-        for k in list(self.cluster_visible.keys()):
+                self.cluster_visible[k] = (k >= 0) and self.new_clusters_visible
+        for k in self.cluster_visible:
             if k not in self.cluster_labels and (k >= 0):
-                # used to exist, but now it doesn't
+                # k used to exist, but now it doesn't
                 self.cluster_visible.pop(k)
         for code in self.dataio._special_labels:
             if code not in self.cluster_visible:
@@ -659,7 +661,7 @@ class RippleCatalogueController(ControllerBase):
 
     def reload_data(self):
         self.dataio.compute_all_centroid()
-        self.dataio.recalc_cluster_info()
+        self.dataio.recalc_cluster_info(removeEmpty=False)
         self.init_plot_attributes()
 
     @property
@@ -697,7 +699,7 @@ class RippleCatalogueController(ControllerBase):
 
     @property
     def spike_label(self):
-        return self.all_peaks['cluster_label']
+        return self.all_peaks['cluster_label'].flatten()
     
     @property
     def spike_channel(self):
