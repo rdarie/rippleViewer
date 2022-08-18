@@ -1,3 +1,4 @@
+from re import L
 from ephyviewer.myqt import QT
 # from pyqtgraph.util.mutex import Mutex
 from contextlib import nullcontext
@@ -25,18 +26,21 @@ class RippleWaveformViewer(WidgetBase):
         {'name': 'show_only_selected_cluster', 'type': 'bool', 'value': False},
         {'name': 'plot_limit_for_flatten', 'type': 'bool', 'value': True},
         {'name': 'plot_zero_vline', 'type': 'bool', 'value': True},
+        {'name': 'plot_zero_hline', 'type': 'bool', 'value': True},
         {'name': 'summary_statistics', 'type': 'list', 'value': 'none', 'values': ['median/mad', 'none'] },
         {'name': 'shade_dispersion', 'type': 'bool', 'value': False},
         {'name': 'show_channel_num', 'type': 'bool', 'value': True},
         {'name': 'show_scalebar', 'type': 'bool', 'value': True},
-        {'name': 'vline_color', 'type': 'color', 'value': '#FFFFFFAA'},
+        {'name': 'zero_line_color', 'type': 'color', 'value': '#FFFFFFAA'},
         {'name': 'max_num_points', 'type' :'int', 'value' : 500000, 'limits':[2000, np.inf]},
         {'name': 'debounce_sec', 'type' :'float', 'value' : 500e-3, 'limits':[10e-3, np.inf]},
-        {'name': 'left_sweep', 'type': 'float', 'value': -.1, 'step': 0.1,'suffix': 's', 'siPrefix': True},
-        {'name': 'right_sweep', 'type': 'float', 'value': .2, 'step': 0.1, 'suffix': 's', 'siPrefix': True},
-        {'name': 'stack_size', 'type' :'int', 'value' : 1000,  'limits':[1,np.inf] },
+        {'name': 'left_sweep', 'type': 'float', 'value': -10e-3, 'step': 50e-3,'suffix': 's', 'siPrefix': True},
+        {'name': 'right_sweep', 'type': 'float', 'value': 40e-3, 'step': 50e-3, 'suffix': 's', 'siPrefix': True},
+        {'name': 'stack_size', 'type' :'int', 'value' : 1000,  'limits':[1, np.inf] },
         {'name': 'linewidth', 'type' :'float', 'value' : 1, 'limits':[0.5, 5]},
+        {'name': 'y_scaling_factor', 'type' :'float', 'value' : 1, 'limits':[0., np.inf]},
         {'name': 'linewidth_mean', 'type' :'float', 'value' : 2, 'limits':[0.5, 5]},
+        {'name': 'geometry_aspect_ratio', 'type' :'float', 'value' : 1, 'limits':[0.5, 10]},
         # {'name': 'flip_bottom_up', 'type': 'bool', 'value': False},
         # {'name': 'display_threshold', 'type': 'bool', 'value' : False},
         # {'name': 'sparse_display', 'type': 'bool', 'value' : False },
@@ -50,6 +54,16 @@ class RippleWaveformViewer(WidgetBase):
             controller=controller, refreshRateHz=refreshRateHz)
 
         self.sample_rate = self.controller.dataio.sample_rate
+
+        remakeIOStack = False
+        for paramName in ['left_sweep', 'right_sweep']:
+            if self.controller.dataio.params[paramName] != self.params[paramName]:
+                self.controller.dataio.params[paramName] = self.params[paramName]
+                remakeIOStack = True
+        if remakeIOStack:
+            self.controller.dataio.remake_stack()
+            self.controller.dataio.make_centroids()
+        
         self.layout = QT.QVBoxLayout()
         self.setLayout(self.layout)
 
@@ -138,21 +152,32 @@ class RippleWaveformViewer(WidgetBase):
             xpos = self.arr_geometry[:, 0]
             ypos = self.arr_geometry[:, 1]
             if np.unique(xpos).size > 1:
-                self.delta_x = np.min(np.diff(np.sort(np.unique(xpos))))
+                # self.delta_x = np.min(np.diff(np.sort(np.unique(xpos))))
+                self.delta_x = np.min(np.diff(np.unique(xpos)))
             else:
                 self.delta_x = np.unique(xpos)[0]
-            # print(f" WaveformViewerBase, self.delta_x = {self.delta_x}")
             if np.unique(ypos).size > 1:
-                self.delta_y = np.min(np.diff(np.sort(np.unique(ypos))))
+                # self.delta_y = np.min(np.diff(np.sort(np.unique(ypos))))
+                self.delta_y = np.min(np.diff(np.unique(ypos)))
             else:
                 self.delta_y = max(np.unique(ypos)[0], 1)
-            # print(f" WaveformViewerBase, self.delta_y = {self.delta_y}")
             if self.delta_x > 0.:
-                #~ espx = self.delta_x/2. *.95
-                self.espx = self.delta_x / 2.5
+                self.espx = self.delta_x / (2 * 1.1 * self.params['geometry_aspect_ratio'])
             else:
                 self.espx = .5
-            # print(f"WaveformViewerBase, espx = {espx}")
+            # squeeze empty rows and colums
+            self.arr_geometry_indexed = np.zeros_like(self.arr_geometry, dtype=int)
+            self.arr_geometry_indexed[:, 0] = np.asarray(self.arr_geometry[:, 0] / self.delta_x, dtype=int)
+            self.arr_geometry_indexed[:, 1] = np.asarray(self.arr_geometry[:, 1] / self.delta_y, dtype=int)
+            indexes_min = self.arr_geometry_indexed.min(axis=0)
+            indexes_max = self.arr_geometry_indexed.max(axis=0)
+            offsets = [2 * self.espx, 0.9 * self.delta_y]
+            
+            for axisIdx in [0]:
+                for i in np.arange(indexes_min[axisIdx], indexes_max[axisIdx] + 1):
+                    if i not in self.arr_geometry_indexed[:, axisIdx]:
+                        mask = self.arr_geometry_indexed[:, axisIdx] > i
+                        self.arr_geometry[mask, axisIdx] -= offsets[axisIdx]
         
         self.initialize_plot()
         self.refresh()
@@ -217,6 +242,7 @@ class RippleWaveformViewer(WidgetBase):
             if param.name() in dataio_param_names:
                 self.controller.dataio.params[param.name()] = data
                 self.controller.dataio.remake_stack()
+                self.controller.dataio.make_centroids()
                 self.initialize_plot()
         self.clear_plots()
         return
@@ -299,7 +325,8 @@ class RippleWaveformViewer(WidgetBase):
         if self.wf_min == 0 and self.wf_max == 0:
             self.factor_y = default_factor_y
         else:
-            self.factor_y = (self.wf_max - self.wf_min) ** (-1)
+            y_range = self.wf_max - self.wf_min
+            self.factor_y = (1.1 * y_range) ** (-1)
 
     def gain_zoom(self, factor_ratio):
         self.factor_y *= factor_ratio
@@ -317,16 +344,16 @@ class RippleWaveformViewer(WidgetBase):
                 y_domain_center = 0
                 y_domain_length = 2
             self._y1_range = (
-                y_domain_center - 1.2 * y_domain_length / 2,
-                y_domain_center + 1.2 * y_domain_length / 2)
+                y_domain_center - 1.1 * y_domain_length / 2,
+                y_domain_center + 1.1 * y_domain_length / 2)
             if self.wf_dispersion_max == 0:
                 self._y2_range = 0, 1
             else:
                 self._y2_range = 0., self.wf_dispersion_max
         elif self.mode == 'geometry':
             self._y1_range = (
-                np.min(self.arr_geometry[:, 1]) - self.delta_y * 2,
-                np.max(self.arr_geometry[:, 1]) + self.delta_y * 2
+                np.min(self.arr_geometry[:, 1]) - self.delta_y,
+                np.max(self.arr_geometry[:, 1]) + self.delta_y
                 )
             self._y2_range = None
 
@@ -335,7 +362,7 @@ class RippleWaveformViewer(WidgetBase):
             if self.mode == 'flatten':
                 self._x_range = self.xvect[0], self.xvect[-1]
             elif self.mode == 'geometry':
-                self._x_range = np.min(self.xvect), np.max(self.xvect)
+                self._x_range = np.min(self.xvect) - self.espx, np.max(self.xvect) + self.espx
 
     def _initialize_plot(self):
         if self.controller.get_waveform_left_right()[0] is None:
@@ -476,6 +503,9 @@ class RippleWaveformViewer(WidgetBase):
         self.region_dict2 = {}
         self.vline_list1 = []
         self.vline_list2 = []
+        #
+        self.hline_list1 = []
+        self.hline_list2 = []
         self.scalebar_dict1 = {}
         self.scalebar_dict2 = {}
         self.curves_geometry = []
@@ -499,13 +529,14 @@ class RippleWaveformViewer(WidgetBase):
                 )
             self.channel_num_labels.append(itemtxt)
         #
-        self.thresh_line = scene.InfiniteLine(
-            pos=None, color=self.params['vline_color'].getRgbF())
-        self.thresh_line.visible = False
-        regionColor = QT.QColor(self.params['vline_color'])
+        # self.thresh_line = scene.InfiniteLine(
+        #     pos=None, color=self.params['vline_color'].getRgbF())
+        # self.thresh_line.visible = False
+        regionColor = QT.QColor(self.params['zero_line_color'])
         regionColor.setAlpha(self.alpha)
         regionColor = regionColor.getRgbF()
-        vlineColor  = self.params['vline_color'].getRgbF()
+        vlineColor  = self.params['zero_line_color'].getRgbF()
+        hlineColor  = self.params['zero_line_color'].getRgbF()
 
         for i, c in enumerate(self.controller.channels):
             if i % 2 == 0:
@@ -515,26 +546,28 @@ class RippleWaveformViewer(WidgetBase):
                 region.visible = False
                 self.region_dict1[c] = region
                 #
-                region = scene.LinearRegion(
-                    pos=None, color=regionColor, vertical=True,
-                    parent=self.viewbox2.scene)
-                region.visible = False
-                self.region_dict2[c] = region
-            vline = scene.InfiniteLine(
-                pos=None, color=vlineColor, vertical=True,
+                if self.mode == 'flatten':
+                    region = scene.LinearRegion(
+                        pos=None, color=regionColor, vertical=True,
+                        parent=self.viewbox2.scene)
+                    region.visible = False
+                    self.region_dict2[c] = region
+            #
+            vline = scene.visuals.Line(
+                pos=None, color=vlineColor,
                 parent=self.viewbox1.scene
                 )
             vline.visible = False
             self.vline_list1.append(vline)
-            vline = scene.InfiniteLine(
-                pos=None, color=vlineColor, vertical=True,
-                parent=self.viewbox2.scene
+            #
+            hline = scene.visuals.Line(
+                pos=None, color=hlineColor,
+                parent=self.viewbox1.scene
                 )
-            vline.visible = False
-            self.vline_list2.append(vline)
+            hline.visible = False
+            self.hline_list1.append(hline)
             #
             self.scalebar_dict1[i] = {}
-            #
             scalebar = scene.visuals.Axis(
                 # axis_label='Time (sec)',
                 axis_color=vlineColor, tick_color=vlineColor,
@@ -551,23 +584,36 @@ class RippleWaveformViewer(WidgetBase):
             scalebar.visible = False
             self.scalebar_dict1[i]['y'] = scalebar
             #
-            self.scalebar_dict2[i] = {}
-            #
-            scalebar = scene.visuals.Axis(
-                # axis_label='Time (sec)',
-                axis_color=vlineColor, tick_color=vlineColor,
-                tick_direction=(0., -1.),
-                parent=self.viewbox2.scene,
-                **self.scalebar_params)
-            scalebar.visible = False
-            self.scalebar_dict2[i]['x'] = scalebar
-            scalebar = scene.visuals.Axis(
-                # axis_label='Dispersion (uV)',
-                axis_color=vlineColor, tick_color=vlineColor,
-                parent=self.viewbox2.scene,
-                **self.scalebar_params)
-            scalebar.visible = False
-            self.scalebar_dict2[i]['y'] = scalebar
+            if self.mode == 'flatten':
+                vline = scene.visuals.Line(
+                    pos=None, color=vlineColor,
+                    parent=self.viewbox2.scene
+                    )
+                vline.visible = False
+                self.vline_list2.append(vline)
+                hline = scene.visuals.Line(
+                    pos=None, color=hlineColor,
+                    parent=self.viewbox2.scene
+                    )
+                hline.visible = False
+                self.hline_list2.append(hline)
+                #
+                self.scalebar_dict2[i] = {}
+                scalebar = scene.visuals.Axis(
+                    # axis_label='Time (sec)',
+                    axis_color=vlineColor, tick_color=vlineColor,
+                    tick_direction=(0., -1.),
+                    parent=self.viewbox2.scene,
+                    **self.scalebar_params)
+                scalebar.visible = False
+                self.scalebar_dict2[i]['x'] = scalebar
+                scalebar = scene.visuals.Axis(
+                    # axis_label='Dispersion (uV)',
+                    axis_color=vlineColor, tick_color=vlineColor,
+                    parent=self.viewbox2.scene,
+                    **self.scalebar_params)
+                scalebar.visible = False
+                self.scalebar_dict2[i]['y'] = scalebar
 
         for k in self.controller.positive_cluster_labels:
             self.add_blank_curve(k)
@@ -603,8 +649,10 @@ class RippleWaveformViewer(WidgetBase):
                 nb_channel = self.controller.nb_channel
                 self.xvect = np.zeros((nb_channel, width), dtype='float32')
                 for i, chan in enumerate(channel_group['channels']):
-                    x, y = channel_group['geometry'][chan]
-                    self.xvect[i, :] = np.linspace(x - self.espx, x + self.espx, num=width)
+                    # x, y = channel_group['geometry'][chan]
+                    x = self.arr_geometry[i, 0]
+                    self.xvect[i, :] = np.linspace(
+                        x - self.espx, x + self.espx, num=width)
                 self.recalc_x_range()
                 self.recalc_y_range()
                 self.viewbox1.camera.set_range(
@@ -685,10 +733,13 @@ class RippleWaveformViewer(WidgetBase):
                 if i % 2 == 0:
                     self.region_dict1[c].visible = False
                     self.region_dict2[c].visible = False
-        
             if self.params['plot_zero_vline']:
                 # vline_pos = -n_left + width*i
-                vline_pos = ds_ratio * width * i / self.sample_rate
+                xpos = ds_ratio * width * i / self.sample_rate
+                vline_pos = (
+                    (xpos, y_start),
+                    (xpos, y_stop)
+                    )
                 self.vline_list1[i].set_data(pos=vline_pos)
                 self.vline_list1[i].visible = True
                 self.vline_list2[i].set_data(pos=vline_pos)
@@ -823,6 +874,9 @@ class RippleWaveformViewer(WidgetBase):
 
         if LOGGING: logger.info(f'Finished _refresh_mode_flatten...')
 
+    def y_gain(self):
+        return self.factor_y * self.delta_y * self.params['y_scaling_factor']
+
     def refresh_mode_geometry(self, cluster_visible, keep_range):
         if LOGGING: logger.info(f'Starting _refresh_mode_geometry...')
 
@@ -862,22 +916,7 @@ class RippleWaveformViewer(WidgetBase):
             n_right = n_right // ds_ratio
 
         for i, c in enumerate(self.controller.channels):
-            '''self.vline_list1[i].visible = False
-            self.vline_list2[i].visible = False
-            if i % 2 == 0:
-                self.region_dict1[c].visible = False
-                self.region_dict2[c].visible = False'''
-            '''
-            if self.params['plot_zero_vline']:
-                self.vline_list1[i].set_data(pos=-n_left + width*i)
-                self.vline_list1[i].visible = True
-                self.vline_list2[i].set_data(pos=-n_left + width*i)
-                self.vline_list2[i].visible = True
-            else:
-                self.vline_list1[i].visible = False
-                self.vline_list2[i].visible = False
-            '''
-            if self.params['show_scalebar']:
+            if self.params['plot_zero_vline'] or self.params['plot_zero_hline'] or self.params['show_scalebar']:
                 x_center, y_center = self.arr_geometry[i, :]
                 x_start, x_stop = self.xvect[i, 0], self.xvect[i, -1]
                 x_length = x_stop - x_start
@@ -889,9 +928,31 @@ class RippleWaveformViewer(WidgetBase):
                     y_domain_length = 2
                     y_domain = (-1, 1)
                 #
-                y_length = y_domain_length * self.factor_y * self.delta_y
-                y_start = y_center + y_domain[0] * self.factor_y * self.delta_y
-                y_stop = y_center + y_domain[1] * self.factor_y * self.delta_y
+                y_length = y_domain_length * self.y_gain()
+                y_start = y_center + y_domain[0] * self.y_gain()
+                y_stop = y_center + y_domain[1] * self.y_gain()
+            
+            if self.params['plot_zero_vline']:
+                xpos = self.xvect[i, int(- ds_ratio * n_left)]
+                vline_pos = (
+                    (xpos, y_start),
+                    (xpos, y_stop)
+                    )
+                self.vline_list1[i].set_data(pos=vline_pos)
+                self.vline_list1[i].visible = True
+            else:
+                self.vline_list1[i].visible = False
+
+            if self.params['plot_zero_hline']:
+                ypos = (y_start + y_stop) / 2
+                hline_pos = (
+                    (x_start, ypos),
+                    (x_stop, ypos)
+                    )
+                self.hline_list1[i].set_data(pos=hline_pos)
+                self.hline_list1[i].visible = True
+
+            if self.params['show_scalebar']:
                 ##
                 # x scalebar
                 ##
@@ -940,7 +1001,7 @@ class RippleWaveformViewer(WidgetBase):
 
             ypos = self.arr_geometry[chans, 1]
             
-            wf = wf * self.factor_y * self.delta_y + ypos[None, :]
+            wf = wf * self.y_gain() + ypos[None, :]
             #wf[0,:] = np.nan
             
             connect = np.ones(wf.shape, dtype='bool')
@@ -1036,7 +1097,7 @@ class RippleWaveformViewer(WidgetBase):
                     curve.visible = True
                 elif self.mode == 'geometry':
                     ypos = self.arr_geometry[:, 1]
-                    wf = wf * self.factor_y * self.delta_y + ypos[None, :]
+                    wf = wf * self.y_gain() + ypos[None, :]
                     connect = np.ones(wf.shape, dtype='bool')
                     connect[0, :] = 0
                     connect[-1, :] = 0

@@ -29,6 +29,10 @@ pretty_names = {
     'time': 'time (sec)'
     }
 
+pretty_names_reverse = {}
+for key, value in pretty_names.items():
+    pretty_names_reverse[value] = key
+
 '''
 class OnlinePeakModel(QT.QAbstractItemModel):
     # see https://doc.qt.io/qtforpython/overviews/model-view-programming.html
@@ -337,6 +341,7 @@ class OnlinePeakListSimple(WidgetBase):
         return
     
     def on_cluster_visibility_changed(self):
+        self._refresh()
         print('peaklistSimple.on_cluster_visibility_changed')
 
 
@@ -376,8 +381,9 @@ class OnlineClusterList(WidgetBase):
         * -9 Alien
         """
     
-    _special_label = [labelcodes.LABEL_UNCLASSIFIED, labelcodes.LABEL_TRASH]
-    sort_by_names = ['label', 'channel', 'amplitude', 'nb_peak']
+    _special_label = [labelcodes.LABEL_UNCLASSIFIED]
+    sort_by_names = [
+        'cluster_label', 'amp', 'freq']
     labels_in_table = [
         'cluster_label', 'show/hide', 'elecCath', 'elecAno', 'pulseWidth', 'amp', 'freq']
 
@@ -393,7 +399,11 @@ class OnlineClusterList(WidgetBase):
 
         h.addWidget(QT.QLabel('sort by'))
         self.combo_sort = QT.QComboBox()
-        self.combo_sort.addItems(self.sort_by_names)
+        
+        self.combo_sort.addItems([
+            pretty_names.get(label, label)
+            for label in self.sort_by_names
+            ])
         self.combo_sort.currentIndexChanged.connect(self.refresh)
         h.addWidget(self.combo_sort)
         h.addStretch()
@@ -445,19 +455,18 @@ class OnlineClusterList(WidgetBase):
         self.table.setSelectionMode(QT.QAbstractItemView.ExtendedSelection)
         self.table.setSelectionBehavior(QT.QAbstractItemView.SelectRows)
         
-        sort_mode = str(self.combo_sort.currentText())
-        
+        sort_mode = pretty_names_reverse.get(
+            str(self.combo_sort.currentText()),
+            str(self.combo_sort.currentText())
+            )
+
         clusters = self.controller.clusters
         clusters = clusters[clusters['cluster_label'] >= 0]
 
-        if sort_mode == 'label':
+        if sort_mode == 'cluster_label':
             order =np.arange(clusters.size)
-        elif sort_mode == 'channel':
-            order = np.argsort(clusters['extremum_channel'])
-        elif sort_mode == 'amplitude':
-            order = np.argsort(np.abs(clusters['extremum_amplitude']))[::-1]
-        elif sort_mode == 'waveform_rms':
-            order = np.argsort(clusters['waveform_rms'])[::-1]
+        elif sort_mode in ['amp', 'freq']:
+            order = np.argsort(clusters[sort_mode])
         elif sort_mode == 'nb_peak':
             order = np.argsort(clusters['nb_peak'])[::-1]
         
