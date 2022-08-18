@@ -75,7 +75,6 @@ def main():
     win.show()
     
     # start nodes
-    win.start_refresh()
     triggerAcc.start()
 
     print(f'{__file__} starting qApp ...')

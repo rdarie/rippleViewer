@@ -5,6 +5,7 @@ import numpy as np
 from pyRippleViewer.tridesclous.base import WidgetBase
 import logging
 from ephyviewer.base_vispy import MyQtSceneCanvas
+import time
 
 LOGGING = False
 logger = logging.getLogger(__name__)
@@ -17,22 +18,41 @@ default_factor_y = 0.5
 
 import pdb
 
-class WaveformViewerBase(WidgetBase):
+class RippleWaveformViewer(WidgetBase):
+    _params = [
+        {'name': 'plot_individual_spikes', 'type': 'list', 'value': 'last', 'values': ['last', 'selected', 'none']},
+        {'name': 'individual_spikes_num', 'type' :'int', 'value' : 5, 'limits':[1, np.inf]},
+        {'name': 'show_only_selected_cluster', 'type': 'bool', 'value': False},
+        {'name': 'plot_limit_for_flatten', 'type': 'bool', 'value': True},
+        {'name': 'plot_zero_vline', 'type': 'bool', 'value': True},
+        {'name': 'summary_statistics', 'type': 'list', 'value': 'none', 'values': ['median/mad', 'none'] },
+        {'name': 'shade_dispersion', 'type': 'bool', 'value': False},
+        {'name': 'show_channel_num', 'type': 'bool', 'value': True},
+        {'name': 'show_scalebar', 'type': 'bool', 'value': True},
+        {'name': 'vline_color', 'type': 'color', 'value': '#FFFFFFAA'},
+        {'name': 'max_num_points', 'type' :'int', 'value' : 500000, 'limits':[2000, np.inf]},
+        {'name': 'debounce_sec', 'type' :'float', 'value' : 500e-3, 'limits':[10e-3, np.inf]},
+        {'name': 'left_sweep', 'type': 'float', 'value': -.1, 'step': 0.1,'suffix': 's', 'siPrefix': True},
+        {'name': 'right_sweep', 'type': 'float', 'value': .2, 'step': 0.1, 'suffix': 's', 'siPrefix': True},
+        {'name': 'stack_size', 'type' :'int', 'value' : 1000,  'limits':[1,np.inf] },
+        {'name': 'linewidth', 'type' :'float', 'value' : 1, 'limits':[0.5, 5]},
+        {'name': 'linewidth_mean', 'type' :'float', 'value' : 2, 'limits':[0.5, 5]},
+        # {'name': 'flip_bottom_up', 'type': 'bool', 'value': False},
+        # {'name': 'display_threshold', 'type': 'bool', 'value' : False},
+        # {'name': 'sparse_display', 'type': 'bool', 'value' : False },
+        ]
 
     def __init__(
             self, controller=None, parent=None, refreshRateHz=1.):
 
-        WidgetBase.__init__(self, parent=parent, controller=controller)
-        self.refreshRateHz = refreshRateHz # Hz
-        self.tNextRefresh = None
+        WidgetBase.__init__(
+            self, parent=parent,
+            controller=controller, refreshRateHz=refreshRateHz)
 
         self.sample_rate = self.controller.dataio.sample_rate
         self.layout = QT.QVBoxLayout()
         self.setLayout(self.layout)
-        # self.lock = Mutex()
-        self.lock = nullcontext()
-        #~ self.create_settings()
-        
+
         self.create_toolbar()
         self.layout.addWidget(self.toolbar)
 
@@ -133,8 +153,9 @@ class WaveformViewerBase(WidgetBase):
             else:
                 self.espx = .5
             # print(f"WaveformViewerBase, espx = {espx}")
+        
         self.initialize_plot()
-        #self.refresh(keep_range=False)
+        self.refresh()
     
     def create_toolbar(self):
         tb = self.toolbar = QT.QToolBar()
@@ -168,13 +189,13 @@ class WaveformViewerBase(WidgetBase):
                 self.viewbox1.camera.set_range(x=self._x_range, y=self._y1_range, margin=0.)
             if self._y2_range is not None:
                 self.viewbox2.camera.set_range(x=self._x_range, y=self._y2_range, margin=0.)
-        # self.refresh(keep_range=False)
+        self.enableRefresh()
         return
     
     def on_combo_mode_changed(self):
         self.mode = str(self.combo_mode.currentText())
         self.initialize_plot()
-        # self.refresh(keep_range=False)
+        self.enableRefresh()
         return
     
     def on_params_changed(self, params, changes):
@@ -202,29 +223,29 @@ class WaveformViewerBase(WidgetBase):
 
     def initialize_plot(self):
         if LOGGING: logger.info(f'WaveformViewer.initialize_plot')
-        with self.lock:
-            self._initialize_plot()
-    
-    def refresh(self, keep_range=True):
-        # if LOGGING: logger.info(f'WaveformViewer.refresh {self.sender()}')
-        with self.lock:
-            tNow = time.time()
-            if tNow >= self.tNextRefresh:
-                self._refresh(keep_range=keep_range)
-                self.tNextRefresh = time.time() + (self.refreshRateHz ** (-1))
+        if self.connectedToIO:
+            self.controller.dataio.new_spikes.disconnect(self.refresh)
+            self.connectedToIO = False
+        self._initialize_plot()
+        if not self.connectedToIO:
+            self.controller.dataio.new_spikes.connect(self.refresh)
+            self.connectedToIO = True
 
     def clear_plots(self):
-        with self.lock:
-            for curve in self.curves_individual:
-                curve.visible = False
-            for idx, k in enumerate(self.controller.positive_cluster_labels):
-                self.curves_geometry[idx].visible = False
-                if self.mode=='flatten':
-                    self.curves_mad_top[idx].visible = False
-                    self.curves_mad_bottom[idx].visible = False
-                    self.curves_mad_plot2[idx].visible = False
+        for curve in self.curves_individual:
+            curve.visible = False
+        for idx, k in enumerate(self.controller.positive_cluster_labels):
+            self.curves_geometry[idx].visible = False
+            if self.mode == 'flatten':
+                self.curves_mad_top[idx].visible = False
+                self.curves_mad_bottom[idx].visible = False
+                self.curves_mad_plot2[idx].visible = False
         
     def add_blank_curve(self, k):
+        if self.connectedToIO:
+            self.controller.dataio.new_spikes.disconnect(self.refresh)
+            self.connectedToIO = False
+        #
         color = self.controller.qcolors[k].getRgbF()
         color2 = QT.QColor(self.controller.qcolors[k])
         color2.setAlpha(self.alpha)
@@ -254,6 +275,10 @@ class WaveformViewerBase(WidgetBase):
             parent=self.viewbox2.scene)
         curve_p2.visible = (self.mode == 'flatten')
         self.curves_mad_plot2.append(curve_p2)
+        #
+        if not self.connectedToIO:
+            self.controller.dataio.new_spikes.connect(self.refresh)
+            self.connectedToIO = True
 
     def reset_y_factor(self):
 
@@ -278,7 +303,7 @@ class WaveformViewerBase(WidgetBase):
 
     def gain_zoom(self, factor_ratio):
         self.factor_y *= factor_ratio
-        # self.refresh(keep_range=True)
+        self.enableRefresh()
     
     def recalc_y_range(self):
         self.wf_min, self.wf_max = self.controller.get_min_max_centroids()
@@ -585,8 +610,8 @@ class WaveformViewerBase(WidgetBase):
                 self.viewbox1.camera.set_range(
                     x=self._x_range, y=self._y1_range, margin=0.)
         
-        # self.tNextRefresh = time.time() + (self.refreshRateHz ** (-1))
-        self.tNextRefresh = time.time()
+        self.enableRefresh()
+
         return
 
     def _refresh(self, keep_range=False):
@@ -1028,37 +1053,3 @@ class WaveformViewerBase(WidgetBase):
                 curve = self.curves_individual[idx]
                 curve.visible = False
         if LOGGING: logger.info('Finished _refresh_individual')
-
-    def on_spike_selection_changed(self):
-        #~ n_selected = np.sum(self.controller.spike_selection)
-        #~ self._refresh_one_spike(n_selected)
-        if LOGGING: logger.info('Starting on_spike_selection_changed')
-        # self.refresh(keep_range=True)
-        if LOGGING: logger.info('Finished on_spike_selection_changed')
-
-class RippleWaveformViewer(WaveformViewerBase):
-    """
-    """
-    _params = [
-        {'name': 'plot_individual_spikes', 'type': 'list', 'value': 'selected', 'values': ['last', 'selected', 'none']},
-        {'name': 'individual_spikes_num', 'type' :'int', 'value' : 5, 'limits':[1, np.inf]},
-        {'name': 'show_only_selected_cluster', 'type': 'bool', 'value': False},
-        {'name': 'plot_limit_for_flatten', 'type': 'bool', 'value': True},
-        {'name': 'plot_zero_vline', 'type': 'bool', 'value': True},
-        {'name': 'summary_statistics', 'type': 'list', 'value': 'none', 'values': ['median/mad', 'none'] },
-        {'name': 'shade_dispersion', 'type': 'bool', 'value': False},
-        {'name': 'show_channel_num', 'type': 'bool', 'value': True},
-        {'name': 'show_scalebar', 'type': 'bool', 'value': True},
-        {'name': 'vline_color', 'type': 'color', 'value': '#FFFFFFAA'},
-        {'name': 'max_num_points', 'type' :'int', 'value' : 500000, 'limits':[2000, np.inf]},
-        {'name': 'debounce_sec', 'type' :'float', 'value' : 500e-3, 'limits':[10e-3, np.inf]},
-        {'name': 'left_sweep', 'type': 'float', 'value': -.1, 'step': 0.1,'suffix': 's', 'siPrefix': True},
-        {'name': 'right_sweep', 'type': 'float', 'value': .2, 'step': 0.1, 'suffix': 's', 'siPrefix': True},
-        {'name': 'stack_size', 'type' :'int', 'value' : 1000,  'limits':[1,np.inf] },
-        {'name': 'linewidth', 'type' :'float', 'value' : 1, 'limits':[0.5, 5]},
-        {'name': 'linewidth_mean', 'type' :'float', 'value' : 2, 'limits':[0.5, 5]},
-        # {'name': 'flip_bottom_up', 'type': 'bool', 'value': False},
-        # {'name': 'display_threshold', 'type': 'bool', 'value' : False},
-        # {'name': 'sparse_display', 'type': 'bool', 'value' : False },
-        ]
-    

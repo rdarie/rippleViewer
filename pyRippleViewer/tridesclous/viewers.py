@@ -12,7 +12,7 @@ from pyacq.viewers.ephyviewer_mixin import RefreshTimer
 from pyacq.devices.ripple import _dtype_stim_packet, _zero_stim_packet
 from pyRippleViewer.tridesclous import labelcodes
 from pyRippleViewer.tridesclous.base import ControllerBase
-from pyRippleViewer.tridesclous.onlinepeaklists import OnlinePeakList, OnlineClusterPeakList
+from pyRippleViewer.tridesclous.onlinepeaklists import OnlinePeakList, OnlineClusterList
 from pyRippleViewer.tridesclous.onlinewaveformviewer_vispy import RippleWaveformViewer
 from pyRippleViewer.tridesclous.main_tools import (median_mad, mean_std, make_color_dict, get_color_palette)
 
@@ -325,6 +325,7 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         self.clusters['nb_peak'][self.clusters['cluster_label'] == self.current_stim_cluster['cluster_label']] += data.shape[0]
         self._all_peaks_buffer.new_chunk(data[:, None])
         self.new_spikes.emit()
+        print("###### New stim. times incoming... #####")
         return
 
     def on_limit_reached(self, limit_index):
@@ -601,7 +602,6 @@ class RippleTriggerAccumulator(TriggerAccumulator):
 
 class RippleCatalogueController(ControllerBase):
     
-    
     def __init__(self, dataio=None, chan_grp=None, parent=None):
         ControllerBase.__init__(self, parent=parent)
         
@@ -632,9 +632,11 @@ class RippleCatalogueController(ControllerBase):
         # cluster visibility
         for k in self.cluster_labels:
             if k not in self.cluster_visible:
-                self.cluster_visible[k] = True
+                # k is a cluster label we've never seen before
+                self.cluster_visible[k] = (k >= 0)
         for k in list(self.cluster_visible.keys()):
-            if k not in self.cluster_labels and k >= 0:
+            if k not in self.cluster_labels and (k >= 0):
+                # used to exist, but now it doesn't
                 self.cluster_visible.pop(k)
         for code in [labelcodes.LABEL_UNCLASSIFIED, labelcodes.LABEL_TRASH]:
             if code not in self.cluster_visible:
@@ -646,7 +648,7 @@ class RippleCatalogueController(ControllerBase):
         self.cluster_count = {c['cluster_label']: c['nb_peak'] for c in self.clusters}
         for code in [labelcodes.LABEL_UNCLASSIFIED, labelcodes.LABEL_TRASH]:
             self.cluster_count[code] = 0
-    
+
     def reload_data(self):
         self.dataio.compute_all_centroid()
         self.dataio.recalc_cluster_info()
@@ -812,10 +814,9 @@ class RippleTriggeredWindow(QT.QMainWindow):
         
         self.controller = RippleCatalogueController(dataio=dataio)
 
-        self.clusterlist = OnlineClusterPeakList(
-            controller=self.controller, refreshRateHz=refreshRateHz)
-        self.peaklist = OnlinePeakList(controller=self.controller)
-        self.waveformviewer = RippleWaveformViewer(controller=self.controller)
+        self.clusterlist = OnlineClusterList(controller=self.controller, refreshRateHz=refreshRateHz)
+        self.peaklist = OnlinePeakList(controller=self.controller, refreshRateHz=refreshRateHz)
+        self.waveformviewer = RippleWaveformViewer(controller=self.controller, refreshRateHz=refreshRateHz)
 
         docks = {}
 
@@ -823,8 +824,6 @@ class RippleTriggeredWindow(QT.QMainWindow):
         docks['waveformviewer'].setWidget(self.waveformviewer)
         self.addDockWidget(QT.Qt.RightDockWidgetArea, docks['waveformviewer'])
 
-        self.dataio.new_cluster.connect(self.waveformviewer.add_blank_curve)
-        
         docks['clusterlist'] = QT.QDockWidget('stim pattern list', self)
         docks['clusterlist'].setWidget(self.clusterlist)
 
@@ -858,24 +857,19 @@ class RippleTriggeredWindow(QT.QMainWindow):
         '''thisQSize = self.sizeHint()
         self.resize(int(1.4 * thisQSize.width()), int(1.4 * thisQSize.height()))'''
 
-        # self.timer = RefreshTimer(interval=self.refreshRateHz ** -1, node=self)
-        
         for view in self.controller.views:
             self.dataio.new_spikes.connect(view.refresh)
-            # self.timer.timeout.connect(view.refresh)
+            view.connectedToIO = True
+            view.enableRefresh()
 
-
-    def start_refresh(self):
-        # self.timer.start()
-        # self.thread.start()
-        pass
+        self.dataio.new_cluster.connect(self.waveformviewer.add_blank_curve)
         
     def create_actions(self):
         #~ self.act_refresh = QT.QAction('Refresh', self,checkable = False, icon=QT.QIcon.fromTheme("view-refresh"))
         self.act_refresh = QT.QAction(
             'recalc\nsummary\nstatistics', self, checkable=False, icon=QT.QIcon(":/view-refresh.svg"))
         self.act_refresh.triggered.connect(self.refresh_with_reload)
-
+        
     def create_toolbar(self):
         self.toolbar = QT.QToolBar('Tools')
         self.toolbar.setToolButtonStyle(QT.Qt.ToolButtonTextUnderIcon)

@@ -26,19 +26,22 @@ pretty_names = {
     }
 
 class OnlinePeakModel(QT.QAbstractItemModel):
+    # see https://doc.qt.io/qtforpython/overviews/model-view-programming.html
     labels_in_table = ['time', 'cluster_label']
 
-    def __init__(self, parent = None, controller=None):
-        QT.QAbstractItemModel.__init__(self,parent)
+    def __init__(
+            self, parent=None, controller=None):
+        QT.QAbstractItemModel.__init__(self, parent)
         self.controller = controller
         self.sample_rate = self.controller.dataio.sample_rate
         self.refresh_colors()
     
     def columnCount(self, parentIndex):
-        return 2
+        return len(self.labels_in_table)
         
     def rowCount(self, parentIndex):
-        if not parentIndex.isValid() and self.controller.spike_label is not None:
+        # print(f"rowCount: parentIndex = {parentIndex}")
+        if (not parentIndex.isValid()) and (self.controller.spike_label is not None):
             self.visible_ind, = np.nonzero(self.controller.spike_visible)
             n = self.visible_ind.size
             return n
@@ -46,7 +49,7 @@ class OnlinePeakModel(QT.QAbstractItemModel):
             return 0
         
     def index(self, row, column, parentIndex):
-        if not parentIndex.isValid():
+        if (not parentIndex.isValid()):
             if column == 0:
                 childItem = row
             return self.createIndex(row, column, None)
@@ -57,6 +60,7 @@ class OnlinePeakModel(QT.QAbstractItemModel):
         return QT.QModelIndex()
     
     def data(self, index, role):
+
         if not index.isValid():
             return None
         
@@ -66,31 +70,16 @@ class OnlinePeakModel(QT.QAbstractItemModel):
         col = index.column()
         row = index.row()
 
-        #~ ind = self.visible_peak_labels.index[row]
-        #~ label =  self.visible_peak_labels.iloc[row]
-        #~ t_start = 0.
-        
         abs_ind = self.visible_ind[row]
-        # seg_num = self.controller.spike_segment[abs_ind]
-
         peak_pos = self.controller.spike_index[abs_ind]
         peak_time = peak_pos / self.sample_rate
         peak_label = self.controller.spike_label[abs_ind]
-        # peak_chan = self.controller.spike_channel[abs_ind]
-        # peak_ampl = self.controller.spikes[abs_ind]['extremum_amplitude']
-        
         
         if role == QT.Qt.DisplayRole:
             if col == 0:
-                return '{:.4f}'.format(peak_time)
+                return f'{peak_time:.3f}'
             elif col == 1:
-                return '{}'.format(peak_label)
-            # elif col == 2:
-            #     return '{}'.format(peak_chan)
-            # elif col == 3:
-            #     return '{:.1f}'.format(peak_ampl)
-            # elif col == 4:
-            #     return '{}'.format(peak_pos)
+                return f'{peak_label}'
             else:
                 return None
     
@@ -110,7 +99,6 @@ class OnlinePeakModel(QT.QAbstractItemModel):
 
     def headerData(self, section, orientation, role):
         if orientation == QT.Qt.Horizontal and role == QT.Qt.DisplayRole:
-            # return self.labels_in_table[section]
             return pretty_names.get(self.labels_in_table[section], self.labels_in_table[section])
         return
     
@@ -121,11 +109,14 @@ class OnlinePeakModel(QT.QAbstractItemModel):
             pix = QT.QPixmap(10, 10)
             pix.fill(color)
             self.icons[k] = QT.QIcon(pix)
-        
-        #~ self.icons[-1] = QIcon(':/user-trash.png')
-        
         self.layoutChanged.emit()
 
+    def reset(self):
+        if self.controller.spike_label is not None:
+            self.beginResetModel()
+            self.beginRemoveRows()
+            self.visible_ind, = np.nonzero(self.controller.spike_visible)
+        pass
 
 class OnlinePeakList(WidgetBase):
     """
@@ -149,7 +140,8 @@ class OnlinePeakList(WidgetBase):
 
     labels_in_table = []
 
-    def __init__(self, controller=None, parent=None):
+    def __init__(
+            self, controller=None, parent=None, refreshRateHz=1.):
         WidgetBase.__init__(self, parent=parent, controller=controller)
         
         self.layout = QT.QVBoxLayout()
@@ -194,7 +186,7 @@ class OnlinePeakList(WidgetBase):
         
         self.refresh()
     
-    def refresh(self):
+    def _refresh(self):
         self.model.refresh_colors()
         '''
         nb_peak = self.controller.spikes.size
@@ -206,6 +198,7 @@ class OnlinePeakList(WidgetBase):
         '''
     
     def on_tree_selection(self):
+        # print('on_tree_selection')
         self.controller.spike_selection[:] = False
         for index in self.tree.selectedIndexes():
             if index.column() == 0:
@@ -218,38 +211,75 @@ class OnlinePeakList(WidgetBase):
         
         row_selected, = np.nonzero(self.controller.spike_selection[self.model.visible_ind])
         
-        if row_selected.size>100:#otherwise this is verry slow
+        if row_selected.size > 100: #otherwise this is verry slow
             row_selected = row_selected[:10]
         
         # change selection
         self.tree.selectionModel().clearSelection()
-        flags = QT.QItemSelectionModel.Select #| QItemSelectionModel.Rows
+        flags = QT.QItemSelectionModel.Select # | QItemSelectionModel.Rows
         itemsSelection = QT.QItemSelection()
         for r in row_selected:
             for c in range(2):
-                index = self.tree.model().index(r,c,QT.QModelIndex())
-                ir = QT.QItemSelectionRange( index )
+                index = self.tree.model().index(r, c, QT.QModelIndex())
+                ir = QT.QItemSelectionRange(index)
                 itemsSelection.append(ir)
         self.tree.selectionModel().select(itemsSelection, flags)
 
         # set selection visible
-        if len(row_selected)>=1:
-            index = self.tree.model().index(row_selected[0],0,QT.QModelIndex())
+        if len(row_selected) >= 1:
+            index = self.tree.model().index(
+                row_selected[0], 0, QT.QModelIndex())
             self.tree.scrollTo(index)
 
-        self.tree.selectionModel().selectionChanged.connect(self.on_tree_selection)        
-
-
-class OnlineClusterBaseList(WidgetBase):
-    """
-    Base for ClusterPeakList (catalogue window) and ClusterSpikeList (Peeler window)
-    """
+        self.tree.selectionModel().selectionChanged.connect(self.on_tree_selection)
     
+    def on_cluster_visibility_changed(self):
+        print('peaklist.on_cluster_visibility_changed')
+        self.model.reset()
+
+
+class OnlineClusterList(WidgetBase):
+    """
+        **Cluster list** is the central widget for actions for clusters :
+        make them visible, merge, trash, sort, split, change color, ...
+        
+        A context menu with right propose:
+        * **Reset colors**
+        * **Show all**
+        * **Hide all**
+        * **Re-label cluster by rms**: this re order cluster so that 0 have the bigger rms
+            and N the lowest.
+        * **Feature projection with all**: this re compute feature projection (equivalent to left toolbar)
+        * **Feature projection with selection**: this re compute feature projection but take
+            in account only selected usefull when you have doubt on small cluster and want a specifit
+            PCA because variance is absord by big ones.
+        * **Move selection to trash**
+        * **Merge selection**: re label spikes in the same cluster.
+        * **Select on peak list**: a spike  as selected for theses clusters.
+        * **Tag selection as same cell**: in case of burst some cell
+            can have diffrent waveform shape leading to diferents cluster but
+            with same ratio. If you have that do not merge clusters because the
+            Peeler wll fail. Prefer tag 2 cluster as same cell.
+        * **Split selection**: try to split only selected cluster.
+        
+        Double click on a row make invisible all others except this one.
+        
+        Cluster can be visualy ordered by some criteria (rms, amplitude, nb peak, ...)
+        This is useless to explore cluster few peaks, or big amplitudes, ...
+        
+        Negative labels are reserved:
+        * -1 is thrash
+        * -2 is noise snippet
+        * -10 unclassified (because no waveform associated)
+        * -9 Alien
+        """
+    
+    _special_label = [labelcodes.LABEL_UNCLASSIFIED, labelcodes.LABEL_TRASH]
     sort_by_names = ['label', 'channel', 'amplitude', 'nb_peak']
     labels_in_table = [
         'cluster_label', 'show/hide', 'elecCath', 'elecAno', 'pulseWidth', 'amp', 'freq']
 
-    def __init__(self, controller=None, parent=None):
+    def __init__(self, controller=None, parent=None, refreshRateHz=1.):
         WidgetBase.__init__(self, parent=parent, controller=controller)
         
         self.layout = QT.QVBoxLayout()
@@ -286,10 +316,7 @@ class OnlineClusterBaseList(WidgetBase):
         
         self.refresh()
 
-    def make_menu(self):
-        raise(NotImplementedError)
-    
-    def refresh(self):
+    def _refresh(self):
         self.table.itemChanged.disconnect(self.on_item_changed)
         
         self.table.clear()
@@ -408,7 +435,6 @@ class OnlineClusterBaseList(WidgetBase):
         self.refresh()
         self.cluster_visibility_changed.emit()
         
-    
     def selected_cluster(self):
         selected = []
         #~ for index in self.table.selectedIndexes():
@@ -418,7 +444,6 @@ class OnlineClusterBaseList(WidgetBase):
             #~ selected.append(self.controller.cluster_labels[index.row()])
             selected.append(item.label)
         return selected
-    
     
     def open_context_menu(self):
         self.menu.popup(self.cursor().pos())
@@ -436,45 +461,6 @@ class OnlineClusterBaseList(WidgetBase):
             self.controller.cluster_visible[k] = False
         self.refresh()
         self.cluster_visibility_changed.emit()
-
-
-class OnlineClusterPeakList(OnlineClusterBaseList):
-    """
-    **Cluster list** is the central widget for actions for clusters :
-    make them visible, merge, trash, sort, split, change color, ...
-    
-    A context menu with right propose:
-      * **Reset colors**
-      * **Show all**
-      * **Hide all**
-      * **Re-label cluster by rms**: this re order cluster so that 0 have the bigger rms
-         and N the lowest.
-      * **Feature projection with all**: this re compute feature projection (equivalent to left toolbar)
-      * **Feature projection with selection**: this re compute feature projection but take
-        in account only selected usefull when you have doubt on small cluster and want a specifit
-        PCA because variance is absord by big ones.
-      * **Move selection to trash**
-      * **Merge selection**: re label spikes in the same cluster.
-      * **Select on peak list**: a spike  as selected for theses clusters.
-      * **Tag selection as same cell**: in case of burst some cell
-        can have diffrent waveform shape leading to diferents cluster but
-        with same ratio. If you have that do not merge clusters because the
-        Peeler wll fail. Prefer tag 2 cluster as same cell.
-      * **Split selection**: try to split only selected cluster.
-    
-    Double click on a row make invisible all others except this one.
-    
-    Cluster can be visualy ordered by some criteria (rms, amplitude, nb peak, ...)
-    This is useless to explore cluster few peaks, or big amplitudes, ...
-    
-    Negative labels are reserved:
-      * -1 is thrash
-      * -2 is noise snippet
-      * -10 unclassified (because no waveform associated)
-      * -9 Alien
-
-    """
-    _special_label = [labelcodes.LABEL_UNCLASSIFIED, labelcodes.LABEL_TRASH]
 
     def make_menu(self):
         self.menu = QT.QMenu()
@@ -536,6 +522,5 @@ class OnlineClusterPeakList(OnlineClusterBaseList):
         if dia.exec_():
             d = dia.get()
             self.controller.set_cluster_attributes(k, **d)
-            
             self.colors_changed.emit()
             self.refresh()

@@ -27,11 +27,8 @@ class ControllerBase(QT.QObject):
         
     def on_spike_selection_changed(self):
         for view in self.views:
-            if view==self.sender(): continue
-            #~ t1 = time.perf_counter()
+            if view == self.sender(): continue
             view.on_spike_selection_changed()
-            #~ t2 = time.perf_counter()
-            #~ print('on_spike_selection_changed',view,  t2-t1)
 
     def on_spike_label_changed(self):
         for view in self.views:
@@ -50,7 +47,7 @@ class ControllerBase(QT.QObject):
             #~ print('on_colors_changed',view,  t2-t1)
     
     def on_cluster_visibility_changed(self):
-        #~ print('on_cluster_visibility_changed', self.cluster_visible)
+        print('on_cluster_visibility_changed', self.cluster_visible)
         for view in self.views:
             if view==self.sender(): continue
             #~ t1 = time.perf_counter()
@@ -59,6 +56,7 @@ class ControllerBase(QT.QObject):
             #~ print('on_cluster_visibility_changed',view,  t2-t1)
 
     def on_cluster_tag_changed(self):
+        print('on_cluster_tag_changed', self.cluster_visible)
         for view in self.views:
             if view==self.sender(): continue
             #~ t1 = time.perf_counter()
@@ -79,7 +77,7 @@ class ControllerBase(QT.QObject):
     @property
     def channel_indexes_and_names(self):
         all_names = self.dataio.datasource.get_channel_names()
-        return [ (c, all_names[c]) for c in self.channel_indexes]
+        return [(c, all_names[c]) for c in self.channel_indexes]
 
 
 class WidgetBase(QT.QWidget):
@@ -94,16 +92,41 @@ class WidgetBase(QT.QWidget):
 
     labels_in_table = []
     
-    def __init__(self, parent = None, controller=None):
+    def __init__(
+            self, parent = None, controller=None, refreshRateHz=1.):
         QT.QWidget.__init__(self, parent)
         self.controller = controller
+        #
+        self.refreshRateHz = refreshRateHz # Hz
+        self.tNextRefresh = None
+        self.connectedToIO = False
+
         if self.controller is not None:
             self.controller.declare_a_view(self)
         
         if self._params is not None:
             self.create_settings()
     
-    def refresh(self):
+    def refresh(self, force=False):
+        drawNow = False
+        if self.tNextRefresh is None:
+            if not force:
+                return
+            else:
+                drawNow = True
+        else:
+            tNow = time.time()
+            drawNow = (tNow >= self.tNextRefresh) or force
+
+        if drawNow:
+            self._refresh()
+            self.tNextRefresh = time.time() + (self.refreshRateHz ** (-1))
+        return
+
+    def enableRefresh(self):
+        self.tNextRefresh = time.time()
+
+    def _refresh(self):
         raise(NotImplementedError)
 
     def create_settings(self):
@@ -125,19 +148,24 @@ class WidgetBase(QT.QWidget):
             self.tree_params.hide()
     
     def on_params_changed(self):
-        self.refresh()
+        # self.refresh()
+        pass
     
     def on_spike_selection_changed(self):
-        self.refresh()
+        # self.refresh()
+        pass
 
     def on_spike_label_changed(self):
-        self.refresh()
+        # self.refresh()
+        pass
         
     def on_colors_changed(self):
-        self.refresh()
+        # self.refresh()
+        pass
     
     def on_cluster_visibility_changed(self):
-        self.refresh()
+        # self.refresh()
+        pass
     
     def on_cluster_tag_changed(self):
         pass

@@ -66,7 +66,6 @@ def main():
     # start nodes
     txBuffer.start()
     triggerAcc.start()
-    win.start_refresh()
     #
     app.exec()
     return
