@@ -99,6 +99,7 @@ class WidgetBase(QT.QWidget):
     
     def refresh(self, force=False):
         drawNow = False
+        
         if self.tNextRefresh is None:
             if not force:
                 return

@@ -33,7 +33,7 @@ class RippleWaveformViewer(WidgetBase):
         {'name': 'show_scalebar', 'type': 'bool', 'value': True},
         {'name': 'zero_line_color', 'type': 'color', 'value': '#FFFFFFAA'},
         {'name': 'max_num_points', 'type' :'int', 'value' : 500000, 'limits':[2000, np.inf]},
-        {'name': 'debounce_sec', 'type' :'float', 'value' : 500e-3, 'limits':[10e-3, np.inf]},
+        {'name': 'debounce_sec', 'type' :'float', 'value' : 330e-3, 'limits':[10e-3, np.inf]},
         {'name': 'left_sweep', 'type': 'float', 'value': -10e-3, 'step': 50e-3,'suffix': 's', 'siPrefix': True},
         {'name': 'right_sweep', 'type': 'float', 'value': 40e-3, 'step': 50e-3, 'suffix': 's', 'siPrefix': True},
         {'name': 'stack_size', 'type' :'int', 'value' : 1000,  'limits':[1, np.inf] },
@@ -272,8 +272,9 @@ class RippleWaveformViewer(WidgetBase):
             self.controller.dataio.new_spikes.disconnect(self.refresh)
             self.connectedToIO = False
         #
-        color = self.controller.qcolors[k].getRgbF()
-        color2 = QT.QColor(self.controller.qcolors[k])
+        color = self.controller.qcolors.get(k, QT.QColor('white')).getRgbF()
+        #
+        color2 = QT.QColor(self.controller.qcolors.get(k, QT.QColor('white')))
         color2.setAlpha(self.alpha)
         color2 = color2.getRgbF()
         #
@@ -810,10 +811,6 @@ class RippleWaveformViewer(WidgetBase):
                 self.curves_mad_plot2[idx].visible = False
                 continue
             #
-            '''color = self.controller.qcolors.get(k, QT.QColor('white')).getRgbF()
-            color2 = QT.QColor(self.controller.qcolors[k])
-            color2.setAlpha(self.alpha)
-            color2 = color2.getRgbF()'''
             #
             wf0, chans = self.controller.get_waveform_centroid(
                 k, key1, channels=self.controller.channels)

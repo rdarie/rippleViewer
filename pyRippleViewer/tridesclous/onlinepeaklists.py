@@ -83,9 +83,12 @@ class OnlinePeakListSimple(WidgetBase):
 
     def rowToSpikeIdx(self, row):
         if self.rowOrder == 'increasing':
-            return self.visible_ind[row]
+            i = row
         elif self.rowOrder == 'decreasing':
-            return self.visible_ind[-(row+1)]
+            # i = self.visible_ind.size - (row + 1)
+            i = - (row + 1)
+        # print(f'row {row} index {self.visible_ind[i]}')
+        return self.visible_ind[i]
 
     def _refresh(self):
         self.table.clear()
@@ -110,8 +113,8 @@ class OnlinePeakListSimple(WidgetBase):
             for label in self.labels_in_table:
                 col = self.labels_in_table.index(label)
                 if label == 'time':
-                    # spike_time = self.controller.all_peaks['timestamp'][spikeIdx] / 3e4
-                    spike_time = self.controller.all_peaks['index'][spikeIdx] / self.sample_rate
+                    spike_time = self.controller.all_peaks['timestamp'][spikeIdx] / 3e4
+                    # spike_time = self.controller.all_peaks['index'][spikeIdx] / self.sample_rate
                     textEntry = f"{spike_time:.3f}"
                 elif label == 'cluster_label':
                     thisClusterLabel = self.controller.all_peaks['cluster_label'][spikeIdx]
@@ -144,7 +147,7 @@ class OnlinePeakListSimple(WidgetBase):
         return
     
     def on_cluster_visibility_changed(self):
-        self._refresh()
+        self.refresh(force=True)
 
 
 class OnlineClusterList(WidgetBase):

@@ -67,15 +67,13 @@ def main():
     for signalType in pyacq.ripple_signal_types:
         rxBuffer.outputs[signalType].configure(
             # protocol='tcp', interface='127.0.0.1', transfermode='sharedmem', double=True,
-            # protocol='inproc', transfermode='sharedmem', double=True,
-            protocol='inproc', transfermode='plaindata', double=True,
+            protocol='inproc', transfermode='sharedmem', double=True,
+            # protocol='inproc', transfermode='plaindata', double=True,
             )
     rxBuffer.initialize()
 
     ephyWin = pyacq.NodeMainViewer(
-        node=rxBuffer, debug=False,
-        speed=10.
-        )
+        node=rxBuffer, debug=False, refreshRateHz=10.)
 
     firstSource = True
     for i, signalType in enumerate(signalTypesToPlot):

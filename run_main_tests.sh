@@ -8,7 +8,7 @@ conda activate rippleViewer
 
 python pyRippleViewer/run_xipppy_server.py &
 python pyRippleViewer/run_websockets_listener.py &
-sleep 30
+sleep 3
 python pyRippleViewer/run_signal_viewer.py &
 python pyRippleViewer/run_triggered_viewer.py &
 

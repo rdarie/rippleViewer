@@ -24,7 +24,7 @@ _dtype_peak = [
     ('channel', 'int64'),
     ('segment', 'int64'),
     ('extremum_amplitude', 'float64'),
-    ('timestamp', 'float64'),
+    ('timestamp', 'int64'),
     ]
 
 _dtype_peak_zero = np.zeros((1,), dtype=_dtype_peak)
@@ -99,7 +99,7 @@ class RippleTriggerAccumulator(TriggerAccumulator):
     
     def _configure(
             self, max_stack_size=2000, max_xsize=2.,
-            channel_group=None, debounce=None):
+            channel_group=None, debounce=None, back_check_timestamps=False):
         """
         Arguments
         ---------------
@@ -117,13 +117,15 @@ class RippleTriggerAccumulator(TriggerAccumulator):
             # debounce is in seconds
             self.debounce_timestamps = max(1, int(30e3 * debounce))
         #
-        self.params.sigTreeStateChanged.connect(self.on_params_change)
         self.max_stack_size = max_stack_size
         self.events_dtype_field = 'timestamp'
         self.params.param('stack_size').setLimits([1, self.max_stack_size])
         self.max_xsize = max_xsize
         self.channel_group = channel_group
         self.channel_groups = {0: channel_group}
+        self.back_check_timestamps = back_check_timestamps
+        #
+        self.params.sigTreeStateChanged.connect(self.on_params_change)
 
     def set_debounce(self, new_debounce):
         # self.debounce_timestamps is in NIP samples (30 kHz)
@@ -228,12 +230,12 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         self.wait_thread_list = []
 
     def on_new_stim_packet(
-            self, packet_index, stim_packet):
+            self, packet_index=None, stim_packet=None):
         # print(f'RippleTriggerAccumulator, on_new_stim_packet: {stim_packet}')
         alreadySeen = stim_packet[self.unique_stim_param_names] in self.clusters[self.unique_stim_param_names]
         if not alreadySeen:
-            newCluster = np.zeros((1,), dtype=_dtype_cluster)
             self.last_unique_cluster_label += 1
+            newCluster = np.zeros((1,), dtype=_dtype_cluster)
             newCluster['cluster_label'] = self.last_unique_cluster_label
             newCluster[self.unique_stim_param_names] = stim_packet[self.unique_stim_param_names]
             self.current_stim_cluster = newCluster
@@ -260,10 +262,17 @@ class RippleTriggerAccumulator(TriggerAccumulator):
             mask = (self.clusters[self.unique_stim_param_names] == stim_packet[self.unique_stim_param_names])
             assert mask.sum() == 1
             self.current_stim_cluster = self.clusters[mask]
+        if self.back_check_timestamps:
+            mask = (
+                self.all_peaks['timestamp'] >= stim_packet['nipTime']
+                )
+            self.all_peaks['cluster_label'][mask] = self.current_stim_cluster['cluster_label']
         return
 
     def on_new_trig(
             self, trig_num, trig_indexes, verbose=False):
+        #################################################################
+        k = self.current_stim_cluster['cluster_label']
         # if LOGGING:
         #     logger.info(f'on_new_trig: {trig_indexes}')
         # add to all_peaks
@@ -325,10 +334,10 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         data = np.zeros(trig_indexes.shape, dtype=_dtype_peak)
         data['timestamp'] = trig_timestamps
         data['index'] = adj_index
-        data['cluster_label'] = self.current_stim_cluster['cluster_label']
+        data['cluster_label'] = k
         data['channel'] = 0
         data['segment'] = 0
-        self.clusters['nb_peak'][self.clusters['cluster_label'] == self.current_stim_cluster['cluster_label']] += data.shape[0]
+        self.clusters['nb_peak'][self.clusters['cluster_label'] == k] += data.shape[0]
         self._all_peaks_buffer.new_chunk(data[:, None])
         self.new_spikes.emit()
         return
@@ -411,7 +420,7 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         last = self.inputs['signals'].buffer.index()
         #
         after_padding = False
-        if i_start >= last or i_stop <= first:
+        if (i_start >= last) or (i_stop <= first):
             return np.zeros((sig_chunk_size, len(channels)), dtype='float64')
         if i_start < first:
             pad_left = first - i_start
@@ -505,15 +514,15 @@ class RippleTriggerAccumulator(TriggerAccumulator):
 
     def recalc_cluster_info(self, removeEmpty=False):
         for k in self.cluster_labels:
-            self.clusters['nb_peak'][self.clusters['cluster_label'] == k] = (self.all_peaks['cluster_label'] == k).sum()
+            peak_count = (self.all_peaks['cluster_label'] == k).sum()
+            self.clusters['nb_peak'][self.clusters['cluster_label'] == k] = peak_count
         if removeEmpty:
-            mask = (self.clusters['cluster_label'] < 0) | (self.clusters['nb_peak'] <= 0)
+            mask = (self.clusters['cluster_label'] < 0) | (self.clusters['nb_peak'] > 0)
             self.clusters = self.clusters[mask]
         pass
 
     def compute_one_centroid(
-            self, k, flush=True,
-            n_spike_for_centroid=None):
+            self, k, flush=True, n_spike_for_centroid=None):
         
         if n_spike_for_centroid is None:
             n_spike_for_centroid = self.n_spike_for_centroid
@@ -613,11 +622,9 @@ class RippleCatalogueController(ControllerBase):
     
     def __init__(self, dataio=None, chan_grp=None, parent=None):
         ControllerBase.__init__(self, parent=parent)
+        self.pause_on_reload = True
         
         self.dataio = dataio
-
-        self.dataio.trig_poller.new_data.connect(self.update_visible_spikes)
-
         if chan_grp is None:
             chan_grp = 0
         self.chan_grp = chan_grp
@@ -630,7 +637,8 @@ class RippleCatalogueController(ControllerBase):
         self.init_plot_attributes()
 
         self.dataio.new_cluster.connect(self.check_plot_attributes)
-
+        self.dataio.trig_poller.new_data.connect(self.update_visible_spikes)
+    
     def init_plot_attributes(self):
         self.new_clusters_visible = True
         self.cluster_visible = {k: k >= 0 for k in self.cluster_labels}
@@ -644,7 +652,7 @@ class RippleCatalogueController(ControllerBase):
             if k not in self.cluster_visible:
                 # k is a cluster label we've never seen before
                 self.cluster_visible[k] = (k >= 0) and self.new_clusters_visible
-        for k in self.cluster_visible:
+        for k in list(self.cluster_visible.keys()):
             if k not in self.cluster_labels and (k >= 0):
                 # k used to exist, but now it doesn't
                 self.cluster_visible.pop(k)
@@ -660,9 +668,13 @@ class RippleCatalogueController(ControllerBase):
             self.cluster_count[code] = 0
 
     def reload_data(self):
+        if self.pause_on_reload:
+            self.dataio.trig_poller.new_data.disconnect(self.update_visible_spikes)
         self.dataio.compute_all_centroid()
         self.dataio.recalc_cluster_info(removeEmpty=False)
         self.init_plot_attributes()
+        if self.pause_on_reload:
+            self.dataio.trig_poller.new_data.connect(self.update_visible_spikes)
 
     @property
     def spikes(self):

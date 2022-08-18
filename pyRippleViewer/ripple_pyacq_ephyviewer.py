@@ -67,7 +67,7 @@ def main():
 
     ephyWin = pyacq.NodeMainViewer(
         node=rxBuffer, debug=False,
-        speed=5.
+        refreshRateHz=5.
         )
 
     firstSource = True

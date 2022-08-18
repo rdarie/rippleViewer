@@ -65,7 +65,7 @@ def main():
         }
 
     triggerAcc = RippleTriggerAccumulator()
-    triggerAcc.configure(channel_group=channel_group, debounce=500e-3)
+    triggerAcc.configure(channel_group=channel_group, debounce=330e-3)
     triggerAcc.inputs['signals'].connect(txBuffer.outputs[signalTypeToPlot])
     triggerAcc.inputs['events'].connect(txBuffer.outputs['stim'])
     triggerAcc.inputs['stim_packets'].connect(stimPacketBuffer.outputs['stim_packets'])
