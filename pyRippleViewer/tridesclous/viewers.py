@@ -12,7 +12,7 @@ from pyacq.viewers.ephyviewer_mixin import RefreshTimer
 from pyacq.devices.ripple import _dtype_stim_packet, _zero_stim_packet
 from pyRippleViewer.tridesclous import labelcodes
 from pyRippleViewer.tridesclous.base import ControllerBase
-from pyRippleViewer.tridesclous.onlinepeaklists import OnlinePeakList, OnlineClusterList
+from pyRippleViewer.tridesclous.onlinepeaklists import OnlinePeakListSimple, OnlineClusterList
 from pyRippleViewer.tridesclous.onlinewaveformviewer_vispy import RippleWaveformViewer
 from pyRippleViewer.tridesclous.main_tools import (median_mad, mean_std, make_color_dict, get_color_palette)
 
@@ -81,6 +81,10 @@ class RippleTriggerAccumulator(TriggerAccumulator):
     unique_stim_param_names = [
         'elecCath', 'elecAno', 'amp', 'freq', 'pulseWidth', 'amp_steps', 'stim_res']
     
+    # _special_labels = [labelcodes.LABEL_UNCLASSIFIED, labelcodes.LABEL_TRASH]
+    
+    _special_labels = [labelcodes.LABEL_UNCLASSIFIED]
+    
     new_spikes = QT.pyqtSignal()
     new_cluster = QT.pyqtSignal(int)
     
@@ -113,8 +117,7 @@ class RippleTriggerAccumulator(TriggerAccumulator):
             # debounce is in seconds
             self.debounce_timestamps = max(1, int(30e3 * debounce))
         #
-        self.params.sigTreeStateChanged.connect(
-            self.on_params_change)
+        self.params.sigTreeStateChanged.connect(self.on_params_change)
         self.max_stack_size = max_stack_size
         self.events_dtype_field = 'timestamp'
         self.params.param('stack_size').setLimits([1, self.max_stack_size])
@@ -183,8 +186,9 @@ class RippleTriggerAccumulator(TriggerAccumulator):
             ]
         self.datasource = DummyDataSource(self.all_channel_names)
         ####
-        self.clusters = np.zeros(shape=(1,), dtype=_dtype_cluster)
-        self.clusters['cluster_label'] = labelcodes.LABEL_TRASH
+        self.clusters = np.zeros(
+            shape=(len(self._special_labels),), dtype=_dtype_cluster)
+        self.clusters['cluster_label'] = self._special_labels
         self.current_stim_cluster = np.zeros(shape=(1,), dtype=_dtype_cluster)
         ####
         self._all_peaks_buffer = RingBuffer(
@@ -228,7 +232,11 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         alreadySeen = stim_packet[self.unique_stim_param_names] in self.clusters[self.unique_stim_param_names]
         if not alreadySeen:
             newCluster = np.zeros((1,), dtype=_dtype_cluster)
-            newClusterLabel = self.clusters['cluster_label'].max() + 1
+            lastClusterLabel = self.clusters['cluster_label'].max()
+            if lastClusterLabel >= 0:
+                newClusterLabel = lastClusterLabel + 1
+            else:
+                newClusterLabel = 0
             newCluster['cluster_label'] = newClusterLabel
             newCluster[self.unique_stim_param_names] = stim_packet[self.unique_stim_param_names]
             self.current_stim_cluster = newCluster
@@ -240,7 +248,8 @@ class RippleTriggerAccumulator(TriggerAccumulator):
             for attrName in ['centroids_mad', 'centroids_std']:
                 expandedArr = np.concatenate(
                     [getattr(self, attrName),
-                    np.ones((1, n_right - n_left, self.nb_channel), dtype=self.source_dtype)])
+                    np.ones((1, n_right - n_left, self.nb_channel),
+                    dtype=self.source_dtype)])
                 setattr(self, attrName, expandedArr)
             for attrName in ['centroids_median', 'centroids_mean']:
                 expandedArr = np.concatenate(
@@ -325,7 +334,6 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         self.clusters['nb_peak'][self.clusters['cluster_label'] == self.current_stim_cluster['cluster_label']] += data.shape[0]
         self._all_peaks_buffer.new_chunk(data[:, None])
         self.new_spikes.emit()
-        print("###### New stim. times incoming... #####")
         return
 
     def on_limit_reached(self, limit_index):
@@ -638,7 +646,7 @@ class RippleCatalogueController(ControllerBase):
             if k not in self.cluster_labels and (k >= 0):
                 # used to exist, but now it doesn't
                 self.cluster_visible.pop(k)
-        for code in [labelcodes.LABEL_UNCLASSIFIED, labelcodes.LABEL_TRASH]:
+        for code in self.dataio._special_labels:
             if code not in self.cluster_visible:
                 self.cluster_visible[code] = False
         self.refresh_colors(reset=False)
@@ -646,7 +654,7 @@ class RippleCatalogueController(ControllerBase):
     
     def do_cluster_count(self):
         self.cluster_count = {c['cluster_label']: c['nb_peak'] for c in self.clusters}
-        for code in [labelcodes.LABEL_UNCLASSIFIED, labelcodes.LABEL_TRASH]:
+        for code in self.dataio._special_labels:
             self.cluster_count[code] = 0
 
     def reload_data(self):
@@ -803,6 +811,7 @@ class RippleTriggeredWindow(QT.QMainWindow):
     def __init__(
             self, dataio=None, refreshRateHz=2.,
             window_title="Triggered signal viewer"):
+
         QT.QMainWindow.__init__(self)
 
         self.window_title = window_title
@@ -814,9 +823,9 @@ class RippleTriggeredWindow(QT.QMainWindow):
         
         self.controller = RippleCatalogueController(dataio=dataio)
 
-        self.clusterlist = OnlineClusterList(controller=self.controller, refreshRateHz=refreshRateHz)
-        self.peaklist = OnlinePeakList(controller=self.controller, refreshRateHz=refreshRateHz)
         self.waveformviewer = RippleWaveformViewer(controller=self.controller, refreshRateHz=refreshRateHz)
+        self.clusterlist = OnlineClusterList(controller=self.controller, refreshRateHz=refreshRateHz)
+        self.peaklist = OnlinePeakListSimple(controller=self.controller, refreshRateHz=refreshRateHz)
 
         docks = {}
 
@@ -888,8 +897,7 @@ class RippleTriggeredWindow(QT.QMainWindow):
         self.waveformviewer.recalc_y_range()
         self.waveformviewer.reset_y_factor()
         self.waveformviewer.clear_plots()
-        self.peaklist.tree.selectionModel().clearSelection()
-        # print(f"waveformviewer.factor_y = {self.waveformviewer.factor_y}")
+        return
     
     def closeEvent(self, event):
         # self.timer.stop()

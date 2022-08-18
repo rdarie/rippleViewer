@@ -11,9 +11,13 @@ from pyRippleViewer.tridesclous import gui_params
 from pyacq.devices.ripple import binaryToElecList
 import pdb
 
-checkboxLookup = {
+boolToCheckBox = {
     False: QT.Qt.Unchecked,
     True: QT.Qt.Checked}
+
+checkBoxToBool = {
+    QT.Qt.Unchecked : False,
+    QT.Qt.Checked : True}
 
 pretty_names = {
     'cluster_label': 'stim. pattern ID',
@@ -25,6 +29,7 @@ pretty_names = {
     'time': 'time (sec)'
     }
 
+'''
 class OnlinePeakModel(QT.QAbstractItemModel):
     # see https://doc.qt.io/qtforpython/overviews/model-view-programming.html
     labels_in_table = ['time', 'cluster_label']
@@ -188,14 +193,12 @@ class OnlinePeakList(WidgetBase):
     
     def _refresh(self):
         self.model.refresh_colors()
-        '''
-        nb_peak = self.controller.spikes.size
-        if self.controller.some_peaks_index is not None:
-            nb_sampled = self.controller.some_peaks_index.shape[0]
-        else:
-            nb_sampled = 0
-        self.label_title.setText('<b>All peaks {} - Nb sampled {}</b>'.format(nb_peak, nb_sampled))
-        '''
+        # nb_peak = self.controller.spikes.size
+        # if self.controller.some_peaks_index is not None:
+        #     nb_sampled = self.controller.some_peaks_index.shape[0]
+        # else:
+        #     nb_sampled = 0
+        # self.label_title.setText('<b>All peaks {} - Nb sampled {}</b>'.format(nb_peak, nb_sampled))
     
     def on_tree_selection(self):
         # print('on_tree_selection')
@@ -236,6 +239,105 @@ class OnlinePeakList(WidgetBase):
     def on_cluster_visibility_changed(self):
         print('peaklist.on_cluster_visibility_changed')
         self.model.reset()
+    '''
+
+class OnlinePeakListSimple(WidgetBase):
+    """
+        **Peak List** show all detected peak for the catalogue construction.
+        """
+
+    labels_in_table = ['time', 'cluster_label']
+
+    def __init__(
+            self, controller=None, parent=None, refreshRateHz=1.):
+        WidgetBase.__init__(self, parent=parent, controller=controller)
+
+        self.refresh_colors()
+        
+        self.layout = QT.QVBoxLayout()
+        self.setLayout(self.layout)
+        
+        self.label_title = QT.QLabel('')
+        self.layout.addWidget(self.label_title)
+        
+        self.table = QT.QTableWidget()
+        self.layout.addWidget(self.table)
+        self.table.itemSelectionChanged.connect(self.on_table_selection)
+
+        # adjust widget size
+        thisQSize = self.sizeHint()
+        thisQSizePolicy = self.sizePolicy()
+        #
+        thisQSizePolicy.setHorizontalPolicy(QT.QSizePolicy.Preferred)
+        thisQSizePolicy.setVerticalPolicy(QT.QSizePolicy.Preferred)
+        thisQSizePolicy.setHorizontalStretch(1)
+        thisQSizePolicy.setVerticalStretch(3)
+        #
+        self.setSizePolicy(thisQSizePolicy)
+        self.setMinimumSize(thisQSize.width(), thisQSize.height())
+        
+    def refresh_colors(self):
+        self.icons = {}
+        for k in self.controller.cluster_labels:
+            color = self.controller.qcolors.get(k, QT.QColor('white'))
+            pix = QT.QPixmap(10, 10)
+            pix.fill(color)
+            self.icons[k] = QT.QIcon(pix)
+
+    def _refresh(self):
+        self.table.clear()
+        #
+        labels = [
+            pretty_names.get(label, label)
+            for label in self.labels_in_table]
+        #
+        self.table.setColumnCount(len(labels))
+        self.table.setHorizontalHeaderLabels(labels)
+        #
+        self.table.setSelectionMode(QT.QAbstractItemView.ExtendedSelection)
+        self.table.setSelectionBehavior(QT.QAbstractItemView.SelectRows)
+        #
+        self.visible_ind, = np.nonzero(self.controller.spike_visible)
+        self.table.setRowCount(self.visible_ind.size)
+        self.refresh_colors()
+        #
+        for row, spikeIdx in enumerate(self.visible_ind):
+            for label in self.labels_in_table:
+                col = self.labels_in_table.index(label)
+                if label == 'time':
+                    # spike_time = self.controller.all_peaks['timestamp'][spikeIdx] / 3e4
+                    spike_time = self.controller.all_peaks['index'][spikeIdx] / self.sample_rate
+                    textEntry = f"{spike_time:.3f}"
+                elif label == 'cluster_label':
+                    thisClusterLabel = self.controller.all_peaks['cluster_label'][spikeIdx]
+                    textEntry = f"{thisClusterLabel}"
+                item = QT.QTableWidgetItem(textEntry)
+                item.setFlags(QT.Qt.ItemIsEnabled | QT.Qt.ItemIsSelectable)
+                if col == 0:
+                    k = self.controller.spikes['cluster_label'][spikeIdx]
+                    item.setIcon(self.icons[k])
+                self.table.setItem(row, col, item)
+        return
+    
+    def on_table_selection(self):
+        self.controller.spike_selection[:] = False
+        for index in self.table.selectedIndexes():
+            if index.column() == 0:
+                ind = self.visible_ind[index.row()]
+                self.controller.spike_selection[ind] = True
+        self.spike_selection_changed.emit()
+    
+    def on_spike_selection_changed(self):
+        self.table.setRangeSelected(
+            QT.QTableWidgetSelectionRange(
+                0, 0,
+                self.table.rowCount(),
+                len(self.labels_in_table)),
+            False)
+        return
+    
+    def on_cluster_visibility_changed(self):
+        print('peaklistSimple.on_cluster_visibility_changed')
 
 
 class OnlineClusterList(WidgetBase):
@@ -279,7 +381,8 @@ class OnlineClusterList(WidgetBase):
     labels_in_table = [
         'cluster_label', 'show/hide', 'elecCath', 'elecAno', 'pulseWidth', 'amp', 'freq']
 
-    def __init__(self, controller=None, parent=None, refreshRateHz=1.):
+    def __init__(
+            self, controller=None, parent=None, refreshRateHz=1.):
         WidgetBase.__init__(self, parent=parent, controller=controller)
         
         self.layout = QT.QVBoxLayout()
@@ -287,6 +390,7 @@ class OnlineClusterList(WidgetBase):
         
         h = QT.QHBoxLayout()
         self.layout.addLayout(h)
+
         h.addWidget(QT.QLabel('sort by'))
         self.combo_sort = QT.QComboBox()
         self.combo_sort.addItems(self.sort_by_names)
@@ -314,6 +418,10 @@ class OnlineClusterList(WidgetBase):
         self.setMinimumSize(thisQSize.width(), thisQSize.height())
         # self.setMaximumSize(int(1.2 * thisQSize.width()), int(1.2 * thisQSize.height()))
         
+        if 'show/hide' in self.labels_in_table:
+            self.checkboxCol = self.labels_in_table.index('show/hide')
+        else:
+            self.checkboxCol = None
         self.refresh()
 
     def _refresh(self):
@@ -322,7 +430,8 @@ class OnlineClusterList(WidgetBase):
         self.table.clear()
         labels = [
             pretty_names.get(label, label)
-            for label in self.labels_in_table]
+            for label in self.labels_in_table
+            ]
 
         self.table.setColumnCount(len(labels))
         self.table.setHorizontalHeaderLabels(labels)
@@ -332,6 +441,7 @@ class OnlineClusterList(WidgetBase):
         #
         self.table.setContextMenuPolicy(QT.Qt.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self.open_context_menu)
+        #
         self.table.setSelectionMode(QT.QAbstractItemView.ExtendedSelection)
         self.table.setSelectionBehavior(QT.QAbstractItemView.SelectRows)
         
@@ -340,15 +450,15 @@ class OnlineClusterList(WidgetBase):
         clusters = self.controller.clusters
         clusters = clusters[clusters['cluster_label'] >= 0]
 
-        if sort_mode=='label':
+        if sort_mode == 'label':
             order =np.arange(clusters.size)
-        elif sort_mode=='channel':
+        elif sort_mode == 'channel':
             order = np.argsort(clusters['extremum_channel'])
-        elif sort_mode=='amplitude':
+        elif sort_mode == 'amplitude':
             order = np.argsort(np.abs(clusters['extremum_amplitude']))[::-1]
-        elif sort_mode=='waveform_rms':
+        elif sort_mode == 'waveform_rms':
             order = np.argsort(clusters['waveform_rms'])[::-1]
-        elif sort_mode=='nb_peak':
+        elif sort_mode == 'nb_peak':
             order = np.argsort(clusters['nb_peak'])[::-1]
         
         cluster_labels = self._special_label + self.controller.positive_cluster_labels[order].tolist()
@@ -369,7 +479,7 @@ class OnlineClusterList(WidgetBase):
             if 'cluster_label' in self.labels_in_table:
                 item_index = self.labels_in_table.index('cluster_label')
                 item = QT.QTableWidgetItem(name)
-                item.setFlags(QT.Qt.ItemIsEnabled|QT.Qt.ItemIsSelectable)
+                item.setFlags(QT.Qt.ItemIsEnabled | QT.Qt.ItemIsSelectable)
                 self.table.setItem(i, item_index, item)
                 item.setIcon(icon)
             
@@ -378,7 +488,8 @@ class OnlineClusterList(WidgetBase):
                 item = QT.QTableWidgetItem('')
                 item.setFlags(QT.Qt.ItemIsEnabled | QT.Qt.ItemIsSelectable | QT.Qt.ItemIsUserCheckable)
                 
-                item.setCheckState(checkboxLookup[self.controller.cluster_visible.get(k, False)])
+                item.setCheckState(
+                    boolToCheckBox[self.controller.cluster_visible.get(k, False)])
                 self.table.setItem(i, item_index, item)
                 item.label = k
 
@@ -416,15 +527,18 @@ class OnlineClusterList(WidgetBase):
 
         for i in range(len(self.labels_in_table)):
             self.table.resizeColumnToContents(i)
-        self.table.itemChanged.connect(self.on_item_changed)        
+
+        self.table.itemChanged.connect(self.on_item_changed)
 
     def on_item_changed(self, item):
-        if item.column() != 1: return
-        sel = {QT.Qt.Unchecked : False, QT.Qt.Checked : True}[item.checkState()]
-        #~ k = self.controller.cluster_labels[item.row()]
-        k = item.label
-        self.controller.cluster_visible[k] = bool(item.checkState())
-        self.cluster_visibility_changed.emit()
+        if self.checkboxCol is None:
+            return
+        elif item.column() != self.checkboxCol:
+            return
+        else:
+            k = item.label
+            self.controller.cluster_visible[k] = bool(item.checkState())
+            self.cluster_visibility_changed.emit()
     
     def on_double_clicked(self, row, col):
         for k in self.controller.cluster_visible:
@@ -447,8 +561,7 @@ class OnlineClusterList(WidgetBase):
     
     def open_context_menu(self):
         self.menu.popup(self.cursor().pos())
-        #~ menu.exec_(self.cursor().pos())
-    
+
     def show_all(self):
         for k in self.controller.cluster_visible:
             if k>=0:

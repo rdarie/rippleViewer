@@ -97,6 +97,7 @@ class WidgetBase(QT.QWidget):
         QT.QWidget.__init__(self, parent)
         self.controller = controller
         #
+        self.sample_rate = self.controller.dataio.sample_rate
         self.refreshRateHz = refreshRateHz # Hz
         self.tNextRefresh = None
         self.connectedToIO = False
