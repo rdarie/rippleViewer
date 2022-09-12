@@ -71,11 +71,13 @@ RepoList=(\
 "pyqtgraph" \
 "ephyviewer" \
 "pyacq" \
+"ISI_Vicon_DataStream_MOCK" \
 )
 
 RepoOptsList=(\
 "" \
 " -b rippleViewerV2" \
+"" \
 "" \
 )
 
@@ -121,6 +123,10 @@ else
         cd "${GitFolder}"
     done
 fi
+
+viconSDKPath="/c/Program Files/Vicon/DataStream SDK/Win64/Python/vicon_dssdk"
+cd "${viconSDKPath}"
+python setup.py develop --install-dir=$PYTHONPATH --no-deps
 
 cd "${GitFolder}/rippleViewer"
 
