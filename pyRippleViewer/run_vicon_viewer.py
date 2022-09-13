@@ -42,7 +42,7 @@ if not re.match(r'tcp://(\*|([0-9\.]+)):(\*|[0-9]+)', rpc_addr):
 def main():
     showScope = True
     showTFR = True
-    signalTypesToPlot = ['ISI-C-0002', 'LeftForcePlate', 'Delsys EMG 2.0.2 #1']
+    signalTypesToPlot = ['ISI-C-0002', 'Delsys ACC', 'Delsys EMG']
 
     # Start Qt application
     app = pg.mkQApp()

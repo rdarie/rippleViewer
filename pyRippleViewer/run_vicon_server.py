@@ -32,8 +32,8 @@ import re
 
 
 def main():
-    requested_signal_types = ['markers', 'devices']
-    signalTypesToPlot = ['ISI-C-0002', 'LeftForcePlate', 'Delsys EMG 2.0.2 #1']
+    requested_signal_types = ['devices']
+    signalTypesToPlot = ['ISI-C-0002', 'Delsys ACC', 'Delsys EMG']
     # Start Qt application
     app = pg.mkQApp()
     # Start a server
@@ -46,7 +46,9 @@ def main():
     viconServer = pyacq.Vicon(
         name='vicon', requested_signal_types=requested_signal_types)
     server['vicon'] = viconServer
-    viconServer.configure(output_name_list=signalTypesToPlot)
+    viconServer.configure(
+        ip_address="192.168.30.2", port="801",
+        output_name_list=signalTypesToPlot)
     ####################################################
     # connect viconServer inputs
     ####################################################

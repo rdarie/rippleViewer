@@ -41,13 +41,16 @@ if not re.match(r'tcp://(\*|([0-9\.]+)):(\*|[0-9]+)', rpc_addr):
 def main():
     showScope = True
     showTFR = True
-
-    signalTypesToPlot = ['ISI-C-0002', 'LeftForcePlate', 'Delsys EMG 2.0.2 #1']
+    requested_signal_types = ['devices']
+    signalTypesToPlot = ['ISI-C-0002', 'Delsys ACC', 'Delsys EMG']
     # Start Qt application
     app = pg.mkQApp()
     ####################################################
-    viconServer = pyacq.Vicon(name='vicon', requested_signal_types=['markers', 'devices'])
-    viconServer.configure(output_name_list=signalTypesToPlot)
+    viconServer = pyacq.Vicon(
+        name='vicon', requested_signal_types=requested_signal_types)
+    viconServer.configure(
+        ip_address="192.168.30.2", port="801",
+        output_name_list=signalTypesToPlot)
     ####################################################
     # configure viconServer outputs
     for outputName in viconServer.outputs:
