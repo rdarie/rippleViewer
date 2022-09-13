@@ -33,6 +33,7 @@ import re
 
 def main():
     requested_signal_types = ['markers', 'devices']
+    signalTypesToPlot = ['ISI-C-0002', 'LeftForcePlate', 'Delsys EMG 2.0.2 #1']
     # Start Qt application
     app = pg.mkQApp()
     # Start a server
@@ -42,30 +43,29 @@ def main():
     server['host'] = host
     print("Running server at: %s" % server.address.decode())
     ####################################################
-    viconClient = pyacq.Vicon(
+    viconServer = pyacq.Vicon(
         name='vicon', requested_signal_types=requested_signal_types)
-    server['vicon'] = viconClient
-    viconClient.configure()
+    server['vicon'] = viconServer
+    viconServer.configure(output_name_list=signalTypesToPlot)
     ####################################################
-    # connect viconClient inputs
+    # connect viconServer inputs
     ####################################################
-    # configure viconClient outputs
-    for outputName, output in viconClient.outputs.items():
-        print(f"{outputName}: {output.spec['nb_channel']} chans")
+    # configure viconServer outputs
+    for outputName, output in viconServer.outputs.items():
         output.configure(
-            # protocol='tcp', interface='127.0.0.1', transfermode='sharedmem', double=True,
-            protocol='inproc', transfermode='sharedmem', double=True,
+            protocol='tcp', interface='127.0.0.1', transfermode='sharedmem', double=True,
+            # protocol='inproc', transfermode='sharedmem', double=True,
             # protocol='inproc', transfermode='plaindata', double=True,
             )
-    pdb.set_trace()
     ####################################################
-    viconClient.initialize()
+    viconServer.initialize()
     ####################################################
     win = pyacq.PyacqServerWindow(server=server, winTitle='vicon server')
     win.show()
     ####################################################
-    viconClient.start()
     win.start()
+    viconServer.start()
+    print(f'{__file__} starting qApp...')
     app.exec()
     ####################################################
     return

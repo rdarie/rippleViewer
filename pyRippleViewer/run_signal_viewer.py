@@ -135,8 +135,8 @@ def main():
                     spkview, connect_time_change=False,
                     tabify_with='spikes_{}'.format(previousSignalType))
         previousSignalType = signalType
+        
     ephyWin.show()
-    
     ephyWin.start_viewers()
     rxBuffer.start()
     ######################

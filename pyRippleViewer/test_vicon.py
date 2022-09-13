@@ -11,7 +11,6 @@ values.
 
 import os, pdb
 import time
-from copy import copy, deepcopy
 
 from pyRippleViewer import *
 
@@ -42,18 +41,26 @@ if not re.match(r'tcp://(\*|([0-9\.]+)):(\*|[0-9]+)', rpc_addr):
 def main():
     showScope = True
     showTFR = True
-    signalTypesToPlot = ['ISI-C-0002', 'LeftForcePlate', 'Delsys EMG 2.0.2 #1']
 
+    signalTypesToPlot = ['ISI-C-0002', 'LeftForcePlate', 'Delsys EMG 2.0.2 #1']
     # Start Qt application
     app = pg.mkQApp()
+    ####################################################
+    viconServer = pyacq.Vicon(name='vicon', requested_signal_types=['markers', 'devices'])
+    viconServer.configure(output_name_list=signalTypesToPlot)
+    ####################################################
+    # configure viconServer outputs
+    for outputName in viconServer.outputs:
+        output = viconServer.outputs[outputName]
+        # print(f"{outputName}: {output.spec['nb_channel']} chans")
+        output.configure(
+            # protocol='tcp', interface='127.0.0.1', transfermode='sharedmem', double=True,
+            protocol='inproc', transfermode='sharedmem', double=True,
+            # protocol='inproc', transfermode='plaindata', double=True,
+            )
+    ####################################################
+    viconServer.initialize()
 
-    # In host/process/thread 2: (you must communicate rpc_addr manually)
-    client = pyacq.RPCClient.get_client(rpc_addr)
-
-    # Get a proxy to published object; use this (almost) exactly as you
-    # would a local object:
-    viconServer = client['vicon']
-    
     all_output_names = [
         key
         for key, value in viconServer.outputs.copy().items()]
@@ -61,60 +68,18 @@ def main():
         stp
         for stp in signalTypesToPlot
         if stp in all_output_names]
-
+    
     ####################################################
     # connect viconServer inputs
     ####################################################
     rxBuffer = pyacq.ViconRxBuffer(name='vicon_rx0')
-    
     rxBuffer.configure(output_names=signalTypesToPlot, output_dict=viconServer.outputs)
-
     for outputName in signalTypesToPlot:
-        rxBuffer.inputs[outputName].connect(viconServer.outputs[outputName])
-
+        output = viconServer.outputs[outputName]
+        rxBuffer.inputs[outputName].connect(output)
     rxBuffer.initialize()
-
-    ephyWin = pyacq.NodeMainViewer(
-        node=rxBuffer, debug=False, refreshRateHz=10.)
-
-    firstSource = True
-    for inputName, thisInput in rxBuffer.inputs.items():
-        if inputName not in rxBuffer.sources:
-            continue
-        sig_source = rxBuffer.sources[inputName]
-        if showScope:
-            traceview = ephy.TraceViewer(
-                source=sig_source, name='signal_{}'.format(inputName))
-            traceview.params_controller.on_automatic_color(cmap_name='Set3')
-        if showTFR:
-            tfrview = ephy.TimeFreqViewer(
-                source=sig_source, scaleogram_type='spectrogram',
-                name='timefreq_{}'.format(inputName))
-        if firstSource:
-            ephyWin.set_time_reference_source(sig_source)
-            if showScope:
-                ephyWin.add_view(
-                    traceview, connect_time_change=False,
-                    )
-            if showTFR:
-                ephyWin.add_view(
-                    tfrview, connect_time_change=False,
-                    )
-            firstSource = False
-        else:
-            if showScope:
-                ephyWin.add_view(
-                    traceview, connect_time_change=False,
-                    tabify_with='signal_{}'.format(previousInputName))
-            if showTFR:
-                ephyWin.add_view(
-                    tfrview, connect_time_change=False,
-                    tabify_with='timefreq_{}'.format(previousInputName))
-        previousInputName = inputName
-
     ######################
-    ephyWin.show()
-    ephyWin.start_viewers()
+    viconServer.start()
     rxBuffer.start()
     ######################
     print(f'{__file__} starting qApp...')
