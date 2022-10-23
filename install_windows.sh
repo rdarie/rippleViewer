@@ -1,42 +1,36 @@
 #!/bin/bash
 
 # activate conda
-export ANACONDA_ROOT='/C/Users/CINNR/.conda'
-. "/C/ProgramData/Anaconda3/etc/profile.d/conda.sh"
-# eval "$('/C/Users/Radu/anaconda3/Scripts/conda.exe' 'shell.bash' 'hook')"
-conda activate
+export ANACONDA_ROOT='/c/anaconda3'
+. "${ANACONDA_ROOT}/etc/profile.d"/conda.sh
 
+export GitRepoRoot="https://github.com/rdarie/"
+export GitFolder="${HOME}/Documents/GitHub"
+export ENV_DIR="${ANACONDA_ROOT}/envs/ripple_viewer_env"
+
+conda activate
 conda config --set pip_interop_enabled True
 conda config --append channels conda-forge
-conda config --append channels intel
-
-export ENV_DIR="${ANACONDA_ROOT}/envs/rippleViewer"
-# export ENV_DIR="${HOME}/.conda/envs/rippleViewer"
+# conda config --append channels intel
 
 # remove env if exists
-# conda remove -n rippleViewer --all --yes # TODO: fails with develop installed packages
+# conda remove -n ripple_viewer_env --all --yes # TODO: fails with develop installed packages
 rm -rf "${ENV_DIR}"
 
 # clean cached installers from conda
 conda clean --all --yes
-#
+
 # create environment
 echo "Creating conda environment"
-conda create -n rippleViewer --file requirements_win.txt --yes
-
-conda activate rippleViewer
-
+conda create -n ripple_viewer_env --file requirements_win.txt --yes
+conda activate ripple_viewer_env
 conda env config vars set PYQTGRAPH_QT_LIB=PySide6
 conda env config vars set PYTHONPATH="${ENV_DIR}/Lib/site-packages"
-
 conda deactivate
-conda activate rippleViewer
+conda activate ripple_viewer_env
 
 echo "python version: "$(python --version)
-
-# export PYTHONPATH="${ENV_DIR}/Lib/site-packages"
 echo PYTHONPATH=$PYTHONPATH
-
 echo "Please check if installation was successful. If not, abort by pressing Ctrl-C"
 echo "Otherwise, continue by pressing any other key."
 read FILLER
@@ -64,9 +58,6 @@ for FILE in ./external_wheels/windows/*.whl; do
     python -m pip install "${FILE}" --no-build-isolation --upgrade --no-cache-dir
 done
 
-GitRepoRoot="https://github.com/rdarie/"
-GitFolder="${HOME}/Documents/GitHub/rdarie"
-
 RepoList=(\
 "pyqtgraph" \
 "ephyviewer" \
@@ -86,7 +77,7 @@ cloneRepos=false
 if [[ $cloneRepos = true ]]
 then
     # make directory for cloned repos
-    CUSTOMDIR="${HOME}/rippleViewerEnv"
+    CUSTOMDIR="${HOME}/ripple_viewer_repos"
     rm -rf $CUSTOMDIR
     mkdir $CUSTOMDIR
     cd $CUSTOMDIR
@@ -107,36 +98,28 @@ then
         cd $repoName
         # pwd
         python setup.py develop --install-dir=$PYTHONPATH --no-deps
-        # pip install --no-warn-conflicts --no-build-isolation --no-deps --editable "${GitFolder}/${repoName}"
         cd $CUSTOMDIR
     done
 else
     # Install other repos
     for i in ${!RepoList[@]}; do
-        echo $i
         repoName=${RepoList[i]}
         echo "Installing: ${GitFolder}/${repoName}"
         cd "${GitFolder}/${repoName}"
-        pwd
-        # python -m pip install --no-warn-conflicts --no-build-isolation --no-deps --editable "${GitFolder}/${repoName}"
         python setup.py develop --no-deps --install-dir=$PYTHONPATH
         cd "${GitFolder}"
     done
 fi
 
-viconSDKPath="/c/Program Files/Vicon/DataStream SDK/Win64/Python/vicon_dssdk"
-cd "${viconSDKPath}"
-python setup.py develop --install-dir=$PYTHONPATH --no-deps
+# viconSDKPath="/c/Program Files/Vicon/DataStream SDK/Win64/Python/vicon_dssdk"
+# cd "${viconSDKPath}"
+# python setup.py develop --install-dir=$PYTHONPATH --no-deps
 
 cd "${GitFolder}/rippleViewer"
-
 python setup.py develop --install-dir=$PYTHONPATH --no-deps
-# python -m pip install --no-warn-conflicts --no-build-isolation --no-deps --editable .
 
 echo "python version: "$(python --version)
-
 conda list --explicit > ./conda-spec-file-win.txt
 pip freeze > ./pip-spec-file-win.txt
-
 conda env export > ./full-environment-win.yml
 conda env export --from-history > ./short-environment-win.yml

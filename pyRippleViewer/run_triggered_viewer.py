@@ -11,22 +11,28 @@ values.
 
 from pyRippleViewer import *
 import pdb
-import sys, re, time
+import sys, re, time, argparse
 
 if LOGGING:
     logger = startLogger(__file__, __name__)
 
-usage = """Usage:
-    python pyacq_ripple_host.py [address]
-
-# Examples:
-python host_server.py
-python host_server.py
+usage = """
 """
 
-xipppy_rpc_addr = 'tcp://127.0.0.1:5001'
-websockets_rpc_addr = 'tcp://127.0.0.2:5001'
+usage = """Usage:
+"""
 
+parser = argparse.ArgumentParser()
+parser.add_argument('-pyacq_ip', '--pyacq_server_ip', required=False, default="127.0.0.1", help="Sets the server's IP address")
+parser.add_argument('-pyacq_p', '--pyacq_server_port', required=False, default="5001", help="Sets the server's port")
+parser.add_argument('-ws_ip', '--websockets_server_ip', required=False, default="192.168.42.1", help="Sets the server's IP address")
+parser.add_argument('-ws_p', '--websockets_server_port', required=False, default="7890", help="Sets the server's port")
+parser.add_argument('-d', '--debug', required=False, type=bool, default=False, help="Flag that bypasses xipppy connection")
+parser.add_argument('-m', '--map_file', required=False, type=str, default="dummy", help="Map file to display")
+args = parser.parse_args()
+
+xipppy_rpc_addr = f'tcp://{args.pyacq_server_ip}:{args.pyacq_server_port}'
+websockets_rpc_addr = f'tcp://{args.websockets_server_ip}:{args.websockets_server_port}'
 
 def main():
     # Start Qt application
@@ -48,14 +54,6 @@ def main():
 
     signalTypeToPlot = 'hifreq' # ['hi-res', 'hifreq', 'stim']
 
-    '''mapFileName = 'dummy'
-    if mapFileName is not None:
-        electrodeMapDF = mapToDF(f'./ripple_map_files/{mapFileName}.map')
-        channel_group = {
-            'channels': [idx for idx, item in enumerate(channel_info)],
-            'geometry': [[100 * (idx % 3 - 1), 100 * idx] for idx, item in enumerate(channel_info)]
-            }'''
-
     channel_info = txBuffer.outputs['hifreq'].params['channel_info']
     channel_group = {
         'channels': [idx for idx in range(len(channel_info))],
@@ -71,7 +69,7 @@ def main():
     triggerAcc.inputs['stim_packets'].connect(stimPacketBuffer.outputs['stim_packets'])
 
     triggerAcc.initialize()
-    win = RippleTriggeredWindow(triggerAcc, refreshRateHz=10)
+    win = RippleTriggeredWindow(triggerAcc, refreshRateHz=10, window_title=f"Triggered view ({args.map_file})")
     win.show()
     
     # start nodes

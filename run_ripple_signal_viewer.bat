@@ -1,2 +1,0 @@
-conda activate rippleViewer
-python pyRippleViewer/run_signal_viewer.py

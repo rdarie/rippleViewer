@@ -1,9 +1,10 @@
 #!/bin/bash
 
 # activate conda
-. "/C/ProgramData/Anaconda3/etc/profile.d/conda.sh"
+export ANACONDA_ROOT='/c/anaconda3'
+. "${ANACONDA_ROOT}/etc/profile.d"/conda.sh
 
-conda activate rippleViewer
+conda activate isi_env
 
 python pyRippleViewer/run_vicon_server.py &
 sleep 30

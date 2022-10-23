@@ -15,6 +15,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-pyacq_ip', '--pyacq_server_ip', required=False, help="Sets the server's IP address")
 parser.add_argument('-pyacq_p', '--pyacq_server_port', required=False, help="Sets the server's port")
 parser.add_argument('-d', '--debug', required=False, type=bool, default=False, help="Flag that bypasses xipppy connection")
+parser.add_argument('-m', '--map_file', required=False, type=str, default="dummy", help="Map file to display")
 args = parser.parse_args()
 
 pyacqServerOpts = dict(
@@ -42,14 +43,17 @@ def main():
     dev = pyacq.XipppyTxBuffer(name='nip0', dummy=args.debug)
     server['nip0'] = dev
 
+    # if args.map_file == 'boston_sci_caudal':
+    #     pdb.set_trace()
+
     requestedChannels = {
         # 'hi-res': [2, 4],
         # 'hifreq': [chIdx for chIdx in range(64)],
         # 'stim': [chIdx for chIdx in range(0, 8)],
         }
 
-    mapFileName = 'dummy'
-    mapFilePath = f'./ripple_map_files/{mapFileName}.map'
+    # mapFileName = 'boston_sci_caudal'
+    mapFilePath = f'./ripple_map_files/{args.map_file}.map'
 
     dev.configure(
         sample_interval_sec=100e-3, sample_chunksize_sec=100e-3,

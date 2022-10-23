@@ -109,26 +109,26 @@ class RippleWaveformViewer(WidgetBase):
 
         self.channel_title_params = dict(
             color='white',
-            font_size=10,
+            font_size=6,
             anchor_x='center', anchor_y='top',
             )
         self.scalebar_params = dict(
-            minor_tick_length=4,
-            major_tick_length=8,
-            tick_font_size=8,
+            minor_tick_length=2,
+            major_tick_length=3,
+            tick_font_size=4,
             tick_label_margin=4,
-            axis_font_size=10,
+            axis_font_size=6,
             axis_label_margin=4,
             anchors=('center', 'bottom')
             )
 
         self.axes_params = dict(
-            minor_tick_length=6,
-            major_tick_length=10,
-            tick_font_size=8,
-            tick_label_margin=6,
-            axis_font_size=10,
-            axis_label_margin=16,
+            minor_tick_length=2,
+            major_tick_length=3,
+            tick_font_size=4,
+            tick_label_margin=4,
+            axis_font_size=6,
+            axis_label_margin=6,
             anchors=('center', 'bottom')
             )
         
