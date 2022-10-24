@@ -22,7 +22,7 @@ import pdb
 class RippleWaveformViewer(WidgetBase):
     _params = [
         {'name': 'plot_individual_spikes', 'type': 'list', 'value': 'last', 'values': ['last', 'selected', 'none']},
-        {'name': 'individual_spikes_num', 'type' :'int', 'value' : 5, 'limits':[1, np.inf]},
+        {'name': 'individual_spikes_num', 'type' :'int', 'value' : 1, 'limits':[1, np.inf]},
         {'name': 'show_only_selected_cluster', 'type': 'bool', 'value': False},
         {'name': 'plot_limit_for_flatten', 'type': 'bool', 'value': True},
         {'name': 'plot_zero_vline', 'type': 'bool', 'value': True},
@@ -33,8 +33,8 @@ class RippleWaveformViewer(WidgetBase):
         {'name': 'show_scalebar', 'type': 'bool', 'value': False},
         {'name': 'zero_line_color', 'type': 'color', 'value': '#FFFFFFAA'},
         {'name': 'max_num_points', 'type' :'int', 'value' : 500000, 'limits':[2000, np.inf]},
-        {'name': 'debounce_sec', 'type' :'float', 'value' : 330e-3, 'limits':[10e-3, np.inf]},
-        {'name': 'left_sweep', 'type': 'float', 'value': -2e-3, 'step': 1e-3,'suffix': 's', 'siPrefix': True},
+        {'name': 'debounce_sec', 'type' :'float', 'value' : 900e-3, 'limits':[10e-3, np.inf]},
+        {'name': 'left_sweep', 'type': 'float', 'value': -1e-3, 'step': 1e-3,'suffix': 's', 'siPrefix': True},
         {'name': 'right_sweep', 'type': 'float', 'value': 9e-3, 'step': 1e-3, 'suffix': 's', 'siPrefix': True},
         {'name': 'stack_size', 'type' :'int', 'value' : 500,  'limits':[1, np.inf]},
         {'name': 'linewidth', 'type' :'float', 'value' : 1, 'limits':[0.5, 5]},
