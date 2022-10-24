@@ -48,12 +48,17 @@ def main():
 
     requestedChannels = {
         # 'hi-res': [2, 4],
-        # 'hifreq': [chIdx for chIdx in range(64)],
+        'stim': [chIdx for chIdx in range(32)] + [chIdx + 128 for chIdx in range(32)],
         # 'stim': [chIdx for chIdx in range(0, 8)],
         }
 
     # mapFileName = 'boston_sci_caudal'
     mapFilePath = f'./ripple_map_files/{args.map_file}.map'
+
+    if 'caudal' in mapFilePath:
+        requestedChannels['hifreq'] = [chIdx for chIdx in range(32)]
+    elif 'rostral' in mapFilePath:
+        requestedChannels['hifreq'] = [chIdx + 128 for chIdx in range(32)]
 
     dev.configure(
         sample_interval_sec=100e-3, sample_chunksize_sec=100e-3,

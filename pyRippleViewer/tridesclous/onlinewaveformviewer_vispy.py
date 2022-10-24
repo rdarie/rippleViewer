@@ -30,13 +30,13 @@ class RippleWaveformViewer(WidgetBase):
         {'name': 'summary_statistics', 'type': 'list', 'value': 'none', 'values': ['median/mad', 'none'] },
         {'name': 'shade_dispersion', 'type': 'bool', 'value': False},
         {'name': 'show_channel_num', 'type': 'bool', 'value': True},
-        {'name': 'show_scalebar', 'type': 'bool', 'value': True},
+        {'name': 'show_scalebar', 'type': 'bool', 'value': False},
         {'name': 'zero_line_color', 'type': 'color', 'value': '#FFFFFFAA'},
         {'name': 'max_num_points', 'type' :'int', 'value' : 500000, 'limits':[2000, np.inf]},
         {'name': 'debounce_sec', 'type' :'float', 'value' : 330e-3, 'limits':[10e-3, np.inf]},
-        {'name': 'left_sweep', 'type': 'float', 'value': -10e-3, 'step': 50e-3,'suffix': 's', 'siPrefix': True},
-        {'name': 'right_sweep', 'type': 'float', 'value': 40e-3, 'step': 50e-3, 'suffix': 's', 'siPrefix': True},
-        {'name': 'stack_size', 'type' :'int', 'value' : 1000,  'limits':[1, np.inf] },
+        {'name': 'left_sweep', 'type': 'float', 'value': -2e-3, 'step': 1e-3,'suffix': 's', 'siPrefix': True},
+        {'name': 'right_sweep', 'type': 'float', 'value': 9e-3, 'step': 1e-3, 'suffix': 's', 'siPrefix': True},
+        {'name': 'stack_size', 'type' :'int', 'value' : 500,  'limits':[1, np.inf]},
         {'name': 'linewidth', 'type' :'float', 'value' : 1, 'limits':[0.5, 5]},
         {'name': 'y_scaling_factor', 'type' :'float', 'value' : 1, 'limits':[0., np.inf]},
         {'name': 'linewidth_mean', 'type' :'float', 'value' : 2, 'limits':[0.5, 5]},
@@ -109,15 +109,15 @@ class RippleWaveformViewer(WidgetBase):
 
         self.channel_title_params = dict(
             color='white',
-            font_size=6,
+            font_size=5,
             anchor_x='center', anchor_y='top',
             )
         self.scalebar_params = dict(
             minor_tick_length=2,
             major_tick_length=3,
-            tick_font_size=4,
-            tick_label_margin=4,
-            axis_font_size=6,
+            tick_font_size=2,
+            tick_label_margin=3,
+            axis_font_size=5,
             axis_label_margin=4,
             anchors=('center', 'bottom')
             )
@@ -125,10 +125,10 @@ class RippleWaveformViewer(WidgetBase):
         self.axes_params = dict(
             minor_tick_length=2,
             major_tick_length=3,
-            tick_font_size=4,
-            tick_label_margin=4,
-            axis_font_size=6,
-            axis_label_margin=6,
+            tick_font_size=2,
+            tick_label_margin=3,
+            axis_font_size=5,
+            axis_label_margin=5,
             anchors=('center', 'bottom')
             )
         
@@ -376,6 +376,7 @@ class RippleWaveformViewer(WidgetBase):
         if self.xaxis1 is not None:
             self.plot1.remove_widget(self.xaxis1)
             self.xaxis1.parent = None
+
         if self.yaxis1 is not None:
             self.plot1.remove_widget(self.yaxis1)
             self.yaxis1.parent = None
@@ -387,6 +388,7 @@ class RippleWaveformViewer(WidgetBase):
         if self.xaxis2 is not None:
             self.plot2.remove_widget(self.xaxis2)
             self.xaxis2.parent = None
+
         if self.yaxis2 is not None:
             self.plot2.remove_widget(self.yaxis2)
             self.yaxis2.parent = None
@@ -427,7 +429,7 @@ class RippleWaveformViewer(WidgetBase):
                     orientation='bottom',
                     axis_label=xaxis_label,
                     **self.axes_params)
-                self.xaxis1.height_max = 40
+                self.xaxis1.height_max = 20
                 self.plot1.add_widget(self.xaxis1, **xaxis_pos)
                 self.xaxis1.link_view(self.viewbox1)
                 
@@ -435,7 +437,7 @@ class RippleWaveformViewer(WidgetBase):
                     orientation='bottom',
                     axis_label=xaxis_label,
                     **self.axes_params)
-                self.xaxis2.height_max = 40
+                self.xaxis2.height_max = 20
                 self.plot2.add_widget(self.xaxis2, **xaxis_pos)
                 self.xaxis2.link_view(self.viewbox2)
 
@@ -444,7 +446,7 @@ class RippleWaveformViewer(WidgetBase):
                     orientation='left',
                     axis_label="Signal (uV)",
                     **self.axes_params)
-                self.yaxis1.width_max = 40
+                self.yaxis1.width_max = 20
                 self.plot1.add_widget(self.yaxis1, **yaxis_pos)
                 self.yaxis1.link_view(self.viewbox1)
 
@@ -452,7 +454,7 @@ class RippleWaveformViewer(WidgetBase):
                     orientation='left',
                     axis_label="Dispersion (uV)",
                     **self.axes_params)
-                self.yaxis2.width_max = 40
+                self.yaxis2.width_max = 20
                 self.plot2.add_widget(self.yaxis2, **yaxis_pos)
                 self.yaxis2.link_view(self.viewbox2)
 
