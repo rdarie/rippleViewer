@@ -33,7 +33,7 @@ import re
 
 def main():
     requested_signal_types = ['devices']
-    signalTypesToPlot = ['ISI-C-0002', 'Delsys ACC', 'Delsys EMG']
+    signalTypesToPlot = ['Unnamed Device 20']
     # Start Qt application
     app = pg.mkQApp()
     # Start a server
