@@ -47,7 +47,7 @@ def main():
         name='vicon', requested_signal_types=requested_signal_types)
     server['vicon'] = viconServer
     viconServer.configure(
-        ip_address="192.168.30.2", port="801",
+        ip_address="192.168.42.131", port="801",
         output_name_list=signalTypesToPlot)
     ####################################################
     # connect viconServer inputs
