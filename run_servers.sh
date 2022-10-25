@@ -12,6 +12,5 @@ python pyRippleViewer/run_xipppy_server.py -pyacq_ip 127.0.0.1 -pyacq_p 5002 -m 
 python pyRippleViewer/run_vicon_server.py -pyacq_ip 127.0.0.1 -pyacq_p 5004 &
 #
 python pyRippleViewer/run_websockets_listener.py -pyacq_ip 127.0.0.1 -pyacq_p 5003 -ws_ip 192.168.42.1 -ws_p 7890 &
-# python pyRippleViewer/run_websockets_listener.py -pyacq_ip 127.0.0.1 -pyacq_p 5004 -ws_ip 192.168.42.1 -ws_p 7890 &
 
 echo "Finished launching processes."
