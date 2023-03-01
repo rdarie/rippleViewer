@@ -24,31 +24,21 @@ usage = """Usage:
 """
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-ip', '--server_ip', required=False, help="Sets the server's IP address")
-parser.add_argument('-p', '--server_port', required=False, help="Sets the server's IP address")
-parser.add_argument('-pyacq_ip', '--pyacq_server_ip', required=False, help="Sets the server's IP address")
-parser.add_argument('-pyacq_p', '--pyacq_server_port', required=False, help="Sets the server's IP address")
+parser.add_argument('-ws_ip', '--websockets_server_ip', default="127.0.0.1", required=False, help="Sets the server's IP address")
+parser.add_argument('-ws_p', '--websockets_server_port', default="5003", required=False, help="Sets the server's IP address")
+parser.add_argument('-pyacq_ip', '--pyacq_server_ip', default="127.0.0.1", required=False, help="Sets the server's IP address")
+parser.add_argument('-pyacq_p', '--pyacq_server_port', default="5001", required=False, help="Sets the server's IP address")
 parser.add_argument('-d', '--debug', required=False, type=bool, default=False, help="Flag that bypasses xipppy connection")
 args = parser.parse_args()
 
-webSocketConfOpts = dict(server_port=7890)
-if args.debug:
-    webSocketConfOpts['server_ip'] = '10.9.145.31'
-else:
-    webSocketConfOpts['server_ip'] = '192.168.42.1'
-
-if args.server_ip is not None:
-    webSocketConfOpts['server_ip'] = args.server_ip
-if args.server_port is not None:
-    webSocketConfOpts['server_port'] = args.server_port
+webSocketConfOpts = dict(
+    server_ip=args.websockets_server_ip,
+    server_port=args.websockets_server_port)
 
 pyacqServerOpts = dict(
-    ip='127.0.0.2', port="5001"
-    )
-if args.pyacq_server_ip is not None:
-    pyacqServerOpts['ip'] = args.pyacq_server_ip
-if args.pyacq_server_port is not None:
-    pyacqServerOpts['port'] = args.pyacq_server_port
+    ip=args.pyacq_server_ip,
+    port=args.pyacq_server_port)
+    
 rpc_addr = f"tcp://{pyacqServerOpts['ip']}:{pyacqServerOpts['port']}"
 
 def main():

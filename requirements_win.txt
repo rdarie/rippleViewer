@@ -37,8 +37,7 @@ hdbscan
 joblib
 loky
 openpyxl
-scikit-learn==1.1.1
-scikit-learn-intelex
+scikit-learn
 seaborn
 # for pandas html output
 jinja2

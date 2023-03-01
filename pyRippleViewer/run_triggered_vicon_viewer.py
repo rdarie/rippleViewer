@@ -23,26 +23,33 @@ usage = """Usage:
 """
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-pyacq_ip', '--pyacq_server_ip', required=False, default="127.0.0.1", help="Sets the server's IP address")
-parser.add_argument('-pyacq_p', '--pyacq_server_port', required=False, default="5001", help="Sets the server's port")
+parser.add_argument('-xipppy_ip', '--xipppy_server_ip', required=False, default="127.0.0.1", help="Sets the server's IP address")
+parser.add_argument('-xipppy_p', '--xipppy_server_port', required=False, default="5001", help="Sets the server's port")
+parser.add_argument('-vicon_ip', '--vicon_server_ip', required=False, default="127.0.0.1", help="Sets the server's IP address")
+parser.add_argument('-vicon_p', '--vicon_server_port', required=False, default="5001", help="Sets the server's port")
 parser.add_argument('-ws_ip', '--websockets_server_ip', required=False, default="192.168.42.1", help="Sets the server's IP address")
 parser.add_argument('-ws_p', '--websockets_server_port', required=False, default="7890", help="Sets the server's port")
 parser.add_argument('-d', '--debug', required=False, type=bool, default=False, help="Flag that bypasses xipppy connection")
 parser.add_argument('-m', '--map_file', required=False, type=str, default="dummy", help="Map file to display")
 args = parser.parse_args()
 
-xipppy_rpc_addr = f'tcp://{args.pyacq_server_ip}:{args.pyacq_server_port}'
+vicon_rpc_addr = f'tcp://{args.vicon_server_ip}:{args.vicon_server_port}'
+xipppy_rpc_addr = f'tcp://{args.xipppy_server_ip}:{args.xipppy_server_port}'
 websockets_rpc_addr = f'tcp://{args.websockets_server_ip}:{args.websockets_server_port}'
 
 def main():
+    signalTypeToPlot = 'Unnamed Device 20'
+
     # Start Qt application
     app = pg.mkQApp()
 
     # In host/process/thread 2: (you must communicate rpc_addr manually)
+    vicon_client = pyacq.RPCClient.get_client(vicon_rpc_addr)
     xipppy_client = pyacq.RPCClient.get_client(xipppy_rpc_addr)
 
     # Get a proxy to published object; use this (almost) exactly as you
     # would a local object:
+    viconServer = vicon_client['vicon']
     txBuffer = xipppy_client['nip0']
 
     # In host/process/thread 2: (you must communicate rpc_addr manually)
@@ -52,24 +59,31 @@ def main():
     # would a local object:
     stimPacketBuffer = websockets_client['stimPacketRx']
 
-    signalTypeToPlot = 'hifreq' # ['hi-res', 'hifreq', 'stim']
+    channel_info = viconServer.outputs[signalTypeToPlot].params['channel_info']
+    n_rows = int(np.floor(np.sqrt(len(channel_info))))
+    n_cols = int(np.ceil(len(channel_info) / n_rows))
 
-    channel_info = txBuffer.outputs['hifreq'].params['channel_info']
+    for chan_idx in range(len(channel_info)):
+        channel_info[chan_idx]['xcoords'] = (chan_idx % n_cols) * 10
+        channel_info[chan_idx]['ycoords'] = (chan_idx // n_rows) * 10
+    # pdb.set_trace()
     channel_group = {
         'channels': [idx for idx in range(len(channel_info))],
         'geometry': [
-            (int(entry['xcoords'] / 100), int(entry['ycoords'] / 100))
+            (int(entry['xcoords']), int(entry['ycoords']))
             for entry in channel_info]
             }
 
     triggerAcc = RippleTriggerAccumulator(sense_blank_limits=[0, 5e-3])
     triggerAcc.configure(channel_group=channel_group, debounce=330e-3)
-    triggerAcc.inputs['signals'].connect(txBuffer.outputs[signalTypeToPlot])
+    triggerAcc.inputs['signals'].connect(viconServer.outputs[signalTypeToPlot])
     triggerAcc.inputs['events'].connect(txBuffer.outputs['stim'])
     triggerAcc.inputs['stim_packets'].connect(stimPacketBuffer.outputs['stim_packets'])
 
     triggerAcc.initialize()
-    win = RippleTriggeredWindow(triggerAcc, refreshRateHz=10, window_title=f"Triggered view ({args.map_file})")
+    win = RippleTriggeredWindow(
+        triggerAcc, refreshRateHz=10,
+        window_title=f"Stim.-triggered signals (Vicon)")
     win.show()
     
     # start nodes

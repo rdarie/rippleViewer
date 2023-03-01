@@ -19,24 +19,29 @@ if LOGGING:
 
 import sys
 import re
+import argparse
 #
 
 usage = """Usage:
-    python pyacq_ripple_host.py [address]
-
-# Examples:
-python host_server.py tcp://10.0.0.100:5000
-python host_server.py tcp://10.0.0.100:*
 """
 
-if len(sys.argv) == 2:
-    rpc_addr = sys.argv[1]
-else:
-    rpc_addr = 'tcp://127.0.0.1:5001'
+parser = argparse.ArgumentParser()
+parser.add_argument('-pyacq_ip', '--pyacq_server_ip', required=False, help="Sets the server's IP address")
+parser.add_argument('-pyacq_p', '--pyacq_server_port', required=False, help="Sets the server's port")
+parser.add_argument('-d', '--debug', required=False, type=bool, default=False, help="Flag that bypasses xipppy connection")
+parser.add_argument('-m', '--map_file', required=False, type=str, default="dummy", help="Map file to display")
+args = parser.parse_args()
 
-if not re.match(r'tcp://(\*|([0-9\.]+)):(\*|[0-9]+)', rpc_addr):
-    sys.stderr.write(usage)
-    sys.exit(-1)
+pyacqServerOpts = dict(
+    ip='127.0.0.1', port="5001"
+    )
+
+if args.pyacq_server_ip is not None:
+    pyacqServerOpts['ip'] = args.pyacq_server_ip
+if args.pyacq_server_port is not None:
+    pyacqServerOpts['port'] = args.pyacq_server_port
+
+rpc_addr = f"tcp://{pyacqServerOpts['ip']}:{pyacqServerOpts['port']}"
 
 def main():
     # Start Qt application
@@ -73,7 +78,9 @@ def main():
     rxBuffer.initialize()
 
     ephyWin = pyacq.NodeMainViewer(
-        node=rxBuffer, debug=False, refreshRateHz=10.)
+        node=rxBuffer, debug=False, refreshRateHz=10.,
+        window_title=f"Signal viewer ({args.map_file})"
+        )
 
     firstSource = True
     for i, signalType in enumerate(signalTypesToPlot):

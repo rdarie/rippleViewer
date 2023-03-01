@@ -33,7 +33,7 @@ import re
 
 def main():
     requested_signal_types = ['devices']
-    signalTypesToPlot = ['ISI-C-0002', 'Delsys ACC', 'Delsys EMG']
+    signalTypesToPlot = ['Unnamed Device 20']
     # Start Qt application
     app = pg.mkQApp()
     # Start a server
@@ -47,7 +47,7 @@ def main():
         name='vicon', requested_signal_types=requested_signal_types)
     server['vicon'] = viconServer
     viconServer.configure(
-        ip_address="192.168.30.2", port="801",
+        ip_address="192.168.42.131", port="801",
         output_name_list=signalTypesToPlot)
     ####################################################
     # connect viconServer inputs

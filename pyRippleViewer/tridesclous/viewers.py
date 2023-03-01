@@ -18,6 +18,10 @@ from pyRippleViewer.tridesclous.main_tools import (median_mad, mean_std, make_co
 
 import pdb, traceback
 
+from lmfit.models import ExponentialModel
+from lmfit import Model, Parameters
+#
+
 _dtype_peak = [
     ('index', 'int64'),
     ('cluster_label', 'int64'),
@@ -47,7 +51,7 @@ _dtype_cluster = [
     ('freq', 'u4'),
     ('pulseWidth', 'u4'),
     ('amp_steps', 'u4'),
-    ('stim_res', 'u4')
+    ('res', 'u4')
     ]
 
 
@@ -79,7 +83,7 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         ]
     
     unique_stim_param_names = [
-        'elecCath', 'elecAno', 'amp', 'freq', 'pulseWidth', 'amp_steps', 'stim_res']
+        'elecCath', 'elecAno', 'amp', 'freq', 'pulseWidth', 'amp_steps', 'res']
     
     # _special_labels = [labelcodes.LABEL_UNCLASSIFIED, labelcodes.LABEL_TRASH]
     
@@ -89,13 +93,28 @@ class RippleTriggerAccumulator(TriggerAccumulator):
     new_cluster = QT.pyqtSignal(int)
     
     def __init__(
-            self, parent=None, **kargs,
+            self, parent=None,
+            sense_blank_limits=None,
+            enable_artifact_rejection=False,
+            **kargs,
             ):
         TriggerAccumulator.__init__(self, parent=parent, **kargs)
         # only capture triggers that are at least one sample apart
         # we initialize it to 1, to avoid double detecting instances of, e.g., stim on multiple channels
         # triggering once per channel
         self.debounce_timestamps = 1
+        self.sense_blank_limits = sense_blank_limits
+        
+        #### artifact
+        self.enable_artifact_rejection = enable_artifact_rejection
+        self.artifactModel = ExponentialModel(prefix='exp_')
+        self.expPars = Parameters()
+        self.expPars.update(self.artifactModel.make_params())
+        self.expPars['exp_amplitude'].set(value=0)
+        self.expPars['exp_decay'].set(min=5., value=1e6, max=1e6)
+        ###
+
+
     
     def _configure(
             self, max_stack_size=2000, max_xsize=2.,
@@ -331,6 +350,7 @@ class RippleTriggerAccumulator(TriggerAccumulator):
             trig_timestamps / self.nip_sample_period).astype('int64')
         for trig_index in adj_index:
             self.limit_poller.append_limit(trig_index + self.limit2)
+        ##
         data = np.zeros(trig_indexes.shape, dtype=_dtype_peak)
         data['timestamp'] = trig_timestamps
         data['index'] = adj_index
@@ -342,10 +362,45 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         self.new_spikes.emit()
         return
 
+    def artifact_rejection(self, arr):
+        t_mask = (self.t_vect >= 0)
+        t = self.t_vect[t_mask]
+        for col_idx in range(arr.shape[1]):
+            exp_y = arr[t_mask,  col_idx]
+            expGuess = self.artifactModel.guess(exp_y, x=t)
+            positivePred = self.artifactModel.eval(expGuess, x=t)
+            positiveResid = np.sum((exp_y - positivePred) ** 2)
+            negativeResid = np.sum((exp_y + positivePred) ** 2)
+            if positiveResid < negativeResid:
+                signGuess = 1.
+            else:
+                signGuess = -1.
+            ampGuess = signGuess * expGuess['exp_amplitude'].value
+            decayGuess = expGuess['exp_decay'].value
+            #
+            if ampGuess == 0:
+                continue
+            self.expPars['exp_decay'].set(value=decayGuess)
+            if ampGuess < 0:
+                ampGuess = min(ampGuess, -1e-6)
+                self.expPars['exp_amplitude'].set(max=1e-3 * ampGuess)
+                self.expPars['exp_amplitude'].set(min=2 * ampGuess)
+            elif ampGuess > 0:
+                ampGuess = max(ampGuess, 1e-6)
+                self.expPars['exp_amplitude'].set(max=2 * ampGuess)
+                self.expPars['exp_amplitude'].set(min=1e-3 * ampGuess)
+            self.expPars['exp_amplitude'].set(value=ampGuess)
+            exp_out = self.artifactModel.fit(exp_y, self.expPars, x=t)
+            # arr[t_mask, col_idx] = exp_out.eval(x=t)
+            arr[t_mask, col_idx] = exp_out.residual
+
     def on_limit_reached(self, limit_index):
         # if LOGGING:
         #     logger.info(f'on limit reached: {limit_index-self.size}:{limit_index}')
         arr = self.get_signals_chunk(i_start=limit_index-self.size, i_stop=limit_index)
+        if self.enable_artifact_rejection:
+            self.artifact_rejection(arr)
+        pdb.set_trace()
         if arr is not None:
             self.stack.new_chunk(arr.reshape(1, (self.limit2 - self.limit1) * self.nb_channel))
 
