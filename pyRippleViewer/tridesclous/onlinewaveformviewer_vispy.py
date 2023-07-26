@@ -30,12 +30,12 @@ class RippleWaveformViewer(WidgetBase):
         {'name': 'summary_statistics', 'type': 'list', 'value': 'none', 'values': ['median/mad', 'none'] },
         {'name': 'shade_dispersion', 'type': 'bool', 'value': False},
         {'name': 'show_channel_num', 'type': 'bool', 'value': True},
-        {'name': 'show_scalebar', 'type': 'bool', 'value': False},
+        {'name': 'show_scalebar', 'type': 'bool', 'value': True},
         {'name': 'zero_line_color', 'type': 'color', 'value': '#FFFFFFAA'},
         {'name': 'max_num_points', 'type' :'int', 'value' : 500000, 'limits':[2000, np.inf]},
         {'name': 'debounce_sec', 'type' :'float', 'value' : 900e-3, 'limits':[10e-3, np.inf]},
         {'name': 'left_sweep', 'type': 'float', 'value': -1e-3, 'step': 1e-3,'suffix': 's', 'siPrefix': True},
-        {'name': 'right_sweep', 'type': 'float', 'value': 9e-3, 'step': 1e-3, 'suffix': 's', 'siPrefix': True},
+        {'name': 'right_sweep', 'type': 'float', 'value': 6e-3, 'step': 1e-3, 'suffix': 's', 'siPrefix': True},
         {'name': 'stack_size', 'type' :'int', 'value' : 500,  'limits':[1, np.inf]},
         {'name': 'linewidth', 'type' :'float', 'value' : 1, 'limits':[0.5, 5]},
         {'name': 'y_scaling_factor', 'type' :'float', 'value' : 1, 'limits':[0., np.inf]},
@@ -109,25 +109,25 @@ class RippleWaveformViewer(WidgetBase):
 
         self.channel_title_params = dict(
             color='white',
-            font_size=5,
+            font_size=8,
             anchor_x='center', anchor_y='top',
             )
         self.scalebar_params = dict(
             minor_tick_length=2,
             major_tick_length=3,
-            tick_font_size=2,
+            tick_font_size=6,
             tick_label_margin=3,
-            axis_font_size=5,
-            axis_label_margin=4,
+            axis_font_size=8,
+            axis_label_margin=8,
             anchors=('center', 'bottom')
             )
 
         self.axes_params = dict(
             minor_tick_length=2,
             major_tick_length=3,
-            tick_font_size=2,
+            tick_font_size=6,
             tick_label_margin=3,
-            axis_font_size=5,
+            axis_font_size=8,
             axis_label_margin=5,
             anchors=('center', 'bottom')
             )

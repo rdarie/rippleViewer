@@ -363,7 +363,7 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         return
 
     def artifact_rejection(self, arr):
-        t_mask = (self.t_vect >= 0)
+        t_mask = (self.t_vect >= self.sense_blank_limits[1])
         t = self.t_vect[t_mask]
         for col_idx in range(arr.shape[1]):
             exp_y = arr[t_mask,  col_idx]
@@ -400,7 +400,8 @@ class RippleTriggerAccumulator(TriggerAccumulator):
         arr = self.get_signals_chunk(i_start=limit_index-self.size, i_stop=limit_index)
         if self.enable_artifact_rejection:
             self.artifact_rejection(arr)
-        pdb.set_trace()
+        t_mask = (self.t_vect >= self.sense_blank_limits[0]) & (self.t_vect <= self.sense_blank_limits[1])
+        arr[t_mask, :] = 0.
         if arr is not None:
             self.stack.new_chunk(arr.reshape(1, (self.limit2 - self.limit1) * self.nb_channel))
 
