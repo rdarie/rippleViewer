@@ -8,7 +8,7 @@
 #
 # Set the 'name' key to name your project
 #
-name: rippleViewerProject
+name: ripple_viewer_project
 
 #
 # Set the 'icon' key to give your project an icon
@@ -31,9 +31,9 @@ commands:
 #
 # In the variables section, list any environment variables your code depends on.
 # Use `anaconda-project add-variable` to add variables.
-#
-variables: {}
-#   PYQTGRAPH_QT_LIB: "PySide6"
+# 
+variables: 
+  PYQTGRAPH_QT_LIB: "PySide6"
 #
 # In the services section, list any services that should be
 # available before your code runs.
@@ -67,48 +67,50 @@ channels:
 # Use `anaconda-project add-packages` to add packages.
 #
 packages:
-  - python==3.8.5
-  - cython==0.29.30
-  - scikit-learn==1.1.1
-  - psutil
-  - hdbscan
-  - pyopencl
-  - pyyaml
-  - pyqt>=5.12
-  - joblib
-  - decorator
-  - scikit-learn-intelex
-  - openpyxl
-  - pyzmq==22.3.0
-  - icc_rt
-  - seaborn
-  - mkl
-  - dill
-  - toml
-  - pyopengl==3.1.6
-  - tqdm
-  - loky
-  - line_profiler
-  - ipykernel
-  - vispy>=0.9
-  - matplotlib
-  - pyserial
-  - numpy==1.22.3
-  - blosc
-  - imageio
-  - pandas
   - av
-  - python-neo>=0.9
-  - jinja2
-  - msgpack-python
-  - pydrive2
-  - mkl_fft
-  - scipy
-  - fastcore
-  - numba
-  - yappi
-  - pyaudio
+  - blosc
+  - blosc
+  - cython
   - daal4py
+  - decorator==5.1.1
+  - dill
+  - fastcore
+  - hdbscan
+  - icc_rt
+  - imageio
+  - ipykernel
+  - jinja2
+  - joblib
+  - line_profiler
+  - lmfit
+  - loky
+  - matplotlib
+  - mkl
+  - mkl_fft
+  - msgpack-python
+  - numba
+  - numpy==1.22
+  - openpyxl
+  - pandas
+  - psutil
+  - pyaudio
+  - PyDrive2
+  - pyopencl
+  - pyopengl>=3.1.6
+  - pyqt>=5.12
+  - pyserial
+  - python-neo>=0.9
+  - python==3.8.5
+  - pyyaml
+  - pyzmq
+  - scikit-learn
+  - scipy
+  - seaborn
+  - toml
+  - tqdm
+  - vispy>=0.9
+  - websockets
+  - yappi
   - pip:
     - PyOpenGL-accelerate==3.1.6
     - PySide6==6.3.1
@@ -116,7 +118,6 @@ packages:
     - git+https://www.github.com/rdarie/ephyviewer.git@rippleViewerV2#egg=ephyviewer
     - git+https://www.github.com/rdarie/pyacq.git#egg=pyacq
     - git+https://www.github.com/rdarie/rippleViewer.git#egg=pyRippleViewer
-
 #
 # In the platforms section, list platforms the project should work on
 # Examples: "linux-64", "osx-64", "win-64"
