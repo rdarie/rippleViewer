@@ -39,6 +39,7 @@ loky
 openpyxl
 scikit-learn
 seaborn
+lmfit
 # for pandas html output
 jinja2
 # for profiling

@@ -8,152 +8,158 @@ Simple example of a custom Node class that generates a stream of random
 values. 
 
 """
-import sys
-from pyacq.core import create_manager
-from pyqtgraph.Qt import QtCore, QtGui
-from pyacq.devices import XipppyBuffer
-from pyacq.devices.ripple import ripple_analogsignal_types, randomSineGenerator
-from pyacq.viewers import (
-    QTimeFreq, QOscilloscope, TraceViewer,
-    InputStreamAnalogSignalSource)
-import ephyviewer
-from neurotic import NeuroticWritableEpochSource
 
-import numpy as np
+from pyRippleViewer import *
+import time
+
+if LOGGING:
+    logger = startLogger(__file__, __name__)
+
 import pdb
-import pyacq
-#
-showScope = False
-showTFR = False
-showEphyTraceViewer = True
-showEphyFrequencyViewer = True
-signalTypeToPlot = 'hi-res'
-dummyKWArgs = {
-    'hifreq_fun': randomSineGenerator(
-        centerFreq=20, dt=7500, noiseStd=0.25, sineAmp=1.)
-    }
 
-# Start Qt application
-app = ephyviewer.mkQApp()
+def main():
+    # Start Qt application
+    app = pg.mkQApp()
 
+    # Create a manager to spawn worker process to record and process audio
+    # man = pyacq.create_manager()
+    #
+    # nodegroup_dev = man.create_nodegroup()
+    # dev = nodegroup_dev.create_node(
+    #     'XipppyBuffer', name='nip0')
+    txBuffer = pyacq.XipppyTxBuffer(name='nip0_tx', dummy=True)
+    #
+    requestedChannels = {
+            # 'hi-res': [],
+            # 'hifreq': [2, 3, 12],
+            # 'stim': [chIdx for chIdx in range(0, 32, 3)],
+            }
 
-# Create a manager to spawn worker process to record and process audio
-man = create_manager()
-#
-# nodegroup_dev = man.create_nodegroup()
-# dev = nodegroup_dev.create_node(
-#     'XipppyBuffer', name='nip0', dummy=True, dummy_kwargs=dummyKWArgs)
-dev = XipppyBuffer(name='nip0', dummy=True, dummy_kwargs=dummyKWArgs)
-#
-requestedChannels = {
-    signalTypeToPlot: [2, 3, 8]
-    }
-dev.configure(
-    sample_interval_sec=50e-3, sample_chunksize_sec=20e-3,
-    channels=requestedChannels, verbose=False, debugging=False)
-for signalType in ripple_analogsignal_types:
-    dev.outputs[signalType].configure(
-        protocol='tcp', transfermode='sharedmem', double=True
-        # protocol='tcp', interface='127.0.0.1', transfermode='plaindata'
+    txBuffer.configure(
+        sample_interval_sec=100e-3, sample_chunksize_sec=100e-3,
+        buffer_size_sec=20.,
+        channels=requestedChannels, verbose=False, debugging=False)
+    print(f'txBuffer.present_analogsignal_types = {txBuffer.present_analogsignal_types}')
+    for signalType in pyacq.ripple_signal_types:
+        txBuffer.outputs[signalType].configure(
+            protocol='tcp', interface='127.0.0.1', transfermode='sharedmem', double=True
+            # protocol='tcp', interface='127.0.0.1', transfermode='plaindata', double=True
+            )
+    txBuffer.initialize()
+
+    showSpikes = True
+    showScope = True
+    showTFR = True
+    signalTypesToPlot = ['hifreq', 'stim'] # ['hi-res', 'hifreq']
+    rxBuffer = pyacq.XipppyRxBuffer(
+        name='nip_rx0',
+        requested_signal_types=signalTypesToPlot
         )
-dev.initialize()
+    rxBuffer.configure()
+    for signalType in signalTypesToPlot:
+        rxBuffer.inputs[signalType].connect(txBuffer.outputs[signalType])
+    for signalType in pyacq.ripple_signal_types:
+        rxBuffer.outputs[signalType].configure(
+            protocol='tcp', interface='127.0.0.1', transfermode='sharedmem', double=True
+            # protocol='tcp', interface='127.0.0.1', transfermode='plaindata', double=True
+            )
+    rxBuffer.initialize()
 
-if showScope:
-    # Create a remote oscilloscope node to view the Ripple stream
-    # nodegroup_osc = man.create_nodegroup()
-    # osc = nodegroup_osc.create_node('QOscilloscope', name='scope0')
-    #
-    # Create a local scope
-    osc = QOscilloscope()
-    #
-    osc.configure(
-        with_user_dialog=True, window_label='scope0', max_xsize=20.)
-    osc.input.connect(dev.outputs[signalTypeToPlot])
-    osc.initialize()
-    osc.show()
-    #
-    osc.params['decimation_method'] = 'min_max'
-    osc.params['mode'] = 'scroll'
-    osc.params['display_labels'] = True
-    osc.params['show_bottom_axis'] = True
-    osc.params['show_left_axis'] = True
-else:
-    osc = None
+    ephyWin = pyacq.NodeMainViewer(
+        node=rxBuffer, debug=False,
+        refreshRateHz=5.
+        )
 
-if showTFR:
-    # spawn workers do calculate the spectrogram
-    tfr_workers = [man.create_nodegroup() for i in range(16)]
-    # Create a time frequency viewer
-    nodegroup_tfr = man.create_nodegroup()
-    tfr = nodegroup_tfr.create_node('QTimeFreq', name='tfr0')
-    #
-    # Create a local time frequency viewer
-    # tfr = QTimeFreq()
-    #
-    tfr.configure(
-        with_user_dialog=True, window_label='tfr0',
-        max_xsize=20., nodegroup_friends=tfr_workers)
-    tfr.input.connect(dev.outputs[signalTypeToPlot])
-    tfr.initialize()
-    tfr.show()
-    #
-    tfr.params['xsize'] = 1.
-    tfr.params['nb_column'] = 8
-    tfr.params['refresh_interval'] = 100
-    tfr.params['show_axis'] = True
-else:
-    tfr = None
+    firstSource = True
+    for i, signalType in enumerate(signalTypesToPlot):
+        if signalType not in pyacq.ripple_analogsignal_types:
+            continue
+        if signalType not in rxBuffer.sources:
+            continue
+        sig_source = rxBuffer.sources[signalType]
+        if showScope:
+            traceview = ephy.TraceViewer(
+                source=sig_source, name='signal_{}'.format(signalType))
+            traceview.params_controller.on_automatic_color(cmap_name='Set3')
+        if showTFR:
+            tfrview = ephy.TimeFreqViewer(
+                source=sig_source,
+                scaleogram_type='spectrogram',
+                name='timefreq_{}'.format(signalType))
+            tfrview.params['timefreq', 'f_stop'] = 50.
+        if firstSource:
+            ephyWin.set_time_reference_source(sig_source)
+            if showScope:
+                ephyWin.add_view(
+                    traceview, connect_time_change=False,
+                    )
+            if showTFR:
+                ephyWin.add_view(
+                    tfrview, connect_time_change=False,
+                    )
+            firstSource = False
+        else:
+            if showScope:
+                ephyWin.add_view(
+                    traceview, connect_time_change=False,
+                    tabify_with='signal_{}'.format(previousSignalType))
+            if showTFR:
+                ephyWin.add_view(
+                    tfrview, connect_time_change=False,
+                    tabify_with='timefreq_{}'.format(previousSignalType))
+        previousSignalType = signalType
 
-if showEphyTraceViewer:
-    # Create a remote ephyviewer TraceViewer node to view the Ripple stream
-    # TODO: can't have local mainviewer with remote viewers
-    # nodegroup_trace_viewer = man.create_nodegroup()
-    # ephy_scope = nodegroup_trace_viewer.create_node('TraceViewer', name='pyacq_viewer')
+    firstSource = True
+    for i, signalType in enumerate(signalTypesToPlot):
+        if signalType not in pyacq.ripple_event_types:
+            continue
+        if signalType not in rxBuffer.sources:
+            continue
+        sig_source = rxBuffer.sources[signalType]
+        if showSpikes:
+            spkview = ephy.SpikeTrainViewer(
+                source=sig_source, name='spikes_{}'.format(signalType))
+            spkview.params_controller.on_automatic_color(cmap_name='Set3')
+        if firstSource:
+            if showSpikes:
+                ephyWin.add_view(
+                    spkview, connect_time_change=False,
+                    )
+            firstSource = False
+        else:
+            if showSpikes:
+                ephyWin.add_view(
+                    spkview, connect_time_change=False,
+                    tabify_with='spikes_{}'.format(previousSignalType))
+        previousSignalType = signalType
+
+    ephyWin.show()
+    # start nodes
+    txBuffer.start()
+    rxBuffer.start()
+    ephyWin.start_viewers()
     #
-    # Create a local ephyviewer TraceViewer...
-    ephy_scope = TraceViewer(name='ephy_viewer_{}'.format(signalTypeToPlot))
-    #
-    ephy_scope.configure(
-        with_user_dialog=True, window_label='ephy_scope_{}'.format(signalTypeToPlot), max_xsize=20.)
-    ephy_scope.input.connect(dev.outputs[signalTypeToPlot])
-    ephy_scope.initialize()
-    ephy_scope.show()
-else:
-    ephy_scope = None
-
-if showEphyFrequencyViewer and showEphyTraceViewer:
-    ephy_tfr = ephyviewer.TimeFreqViewer(
-        source=ephy_scope.source, name='timefreq_{}'.format(signalTypeToPlot))
-    ephy_tfr.show()
-else:
-    ephy_tfr = None
-
-epochAnnotatorSource = NeuroticWritableEpochSource(
-    filename='./test_annotations.csv', possible_labels=['label1', 'another_label'],
-    color_labels=None, channel_name='', backup=True)
-# 
-# epochAnnotatorSource = ephyviewer.CsvEpochSource(
-#     filename='./test_annotations.csv', possible_labels=['label1', 'another_label'],
-#     color_labels=None, channel_name='')
-
-epochAnnotator = ephyviewer.EpochEncoder(source=epochAnnotatorSource, name='epoch')
-#Create the main window that can contain several viewers
-ephyWin = ephyviewer.MainViewer(
-    debug=False, show_auto_scale=True,
-    navigationToolBarClass=ephyviewer.PyAcqNavigationToolBar
-    )
-#
-for ephy_view in [ephy_scope, ephy_tfr]:
-    if ephy_view is not None:
-        ephyWin.add_view(ephy_view)
-ephyWin.add_view(epochAnnotator)
-ephyWin.show()
-
-# start nodes
-for node in [dev, osc, tfr, ephy_scope]:
-    if node is not None:
-        node.start()
+    app.exec()
 
 if __name__ == '__main__':
-    if sys.flags.interactive == 0:
-        pg.exec()
+    if runProfiler:
+        runMetadata = {}
+        yappi.start()
+        start_time = time.perf_counter()
+    try:
+        ###############
+        main()
+        ###############
+    finally:
+        if runProfiler:
+            print('Saving yappi profiler outputs')
+            yappi.stop()
+            stop_time = time.perf_counter()
+            run_time = stop_time - start_time
+            profilerResultsFileName = getProfilerPath(__file__)
+            #
+            from pyRippleViewer.profiling import profiling as prf
+            prf.processYappiResults(
+                fileName=profilerResultsFileName, folder=profilerResultsFolder,
+                minimum_time=yappi_minimum_time, modulesToPrint=yappiModulesToPrint,
+                run_time=run_time, metadata=runMetadata)
