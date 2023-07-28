@@ -1,10 +1,8 @@
 name: ripple_viewer_env
 channels:
   - conda-forge
-  - defaults
 dependencies:
   - av
-  - blosc
   - blosc
   - cython
   - daal4py
@@ -54,4 +52,4 @@ dependencies:
     - git+https://www.github.com/rdarie/ephyviewer.git@rippleViewerV2#egg=ephyviewer
     - git+https://www.github.com/rdarie/pyacq.git#egg=pyacq
     - git+https://www.github.com/rdarie/rippleViewer.git#egg=pyRippleViewer
-    - https://github.com/rdarie/rippleViewer/blob/main/external_wheels/windows/xipppy-0.16.19-cp38-cp38-win_amd64.whl
+    - external_wheels\windows\xipppy-0.16.19-cp38-cp38-win_amd64.whl
