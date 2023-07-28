@@ -66,7 +66,7 @@ def main():
     for chan_idx in range(len(channel_info)):
         channel_info[chan_idx]['xcoords'] = (chan_idx % n_cols) * 10
         channel_info[chan_idx]['ycoords'] = (chan_idx // n_rows) * 10
-    # pdb.set_trace()
+    
     channel_group = {
         'channels': [idx for idx in range(len(channel_info))],
         'geometry': [

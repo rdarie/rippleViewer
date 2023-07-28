@@ -20,7 +20,6 @@ import pdb, traceback
 
 from lmfit.models import ExponentialModel
 from lmfit import Model, Parameters
-#
 
 _dtype_peak = [
     ('index', 'int64'),
