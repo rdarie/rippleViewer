@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # activate conda
-export ANACONDA_ROOT='/E/mambaforge-pypy3'
+export ANACONDA_ROOT='/E/miniforge'
 . "${ANACONDA_ROOT}/etc/profile.d"/conda.sh
 
 export GitRepoRoot="https://github.com/rdarie/"
